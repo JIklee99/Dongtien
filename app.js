@@ -2,41 +2,73 @@
 ====================================================
 ĐẦU TƯ CỔ TỨC
 APP.JS
-====================================================
 
-LOGIC DỰ PHÓNG:
+PHẦN DỰ PHÓNG MỚI
 
-NGUỒN 1:
-CP GỐC
-    ↓
-Cổ tức
-    ↓
-Tiền tái đầu tư
+MÔ HÌNH:
 
-NGUỒN 2:
-CP MUA TỪ:
-    - Cổ tức tái đầu tư
-    - Tiền nạp thêm
-    ↓
-Cổ tức của nguồn 2
-    ↓
-Tiền tái đầu tư
+                CP NGUỒN
+                   │
+                   │
+                   ▼
+             Cổ tức nguồn
+                   │
+                   │
+                   ▼
+              TIỀN MẶT
+                   │
+        ┌──────────┴──────────┐
+        │                     │
+        ▼                     ▼
+ Tiền nạp thêm          Cổ tức tái đầu tư
+        │                     │
+        └──────────┬──────────┘
+                   ▼
+             MUA CP ĐÍCH
+             theo lô 100
+                   │
+                   ▼
+          Các lô CP riêng biệt
+                   │
+                   ▼
+       Cổ tức của CP đích
+                   │
+                   ▼
+             Tiếp tục mua
+             CP đích
 
-KHÔNG:
-CP cuối kỳ × cổ tức
+QUAN TRỌNG:
 
-CÓ:
-CP nguồn × cổ tức
-+
-CP tái đầu tư đã tồn tại đủ thời gian × cổ tức
+1. CP nguồn và CP đích tách riêng.
 
-Mua theo lô 100 CP.
-Tiền chưa đủ mua 100 CP giữ lại.
+2. Cổ tức CP nguồn:
+   CP nguồn × cổ tức nguồn.
+
+3. Cổ tức CP đích:
+   từng lô CP đích đã tồn tại
+   từ năm trước × cổ tức đích.
+
+4. CP đích vừa mua trong năm:
+   KHÔNG nhận cổ tức của năm đó.
+
+5. Mua CP đích theo lô 100.
+
+6. Tiền chưa đủ mua lô 100:
+   giữ lại tiền mặt.
+
+7. Tiền mặt được tính lãi.
+
+8. Giá ADP và giá SJD tách riêng.
+
+9. Giá trị ADP và SJD tách riêng.
+
+10. CP nguồn không bị cộng CP đích.
 ====================================================
 */
 
 
-const STORAGE_KEY = "dautucotuc_v3";
+const STORAGE_KEY =
+    "dautucotuc_v4";
 
 
 const DEFAULT_DATA = {
@@ -181,9 +213,8 @@ function escapeHTML(value) {
 
 function daysBetween(start, end) {
 
-    if (!start || !end) {
+    if (!start || !end)
         return 0;
-    }
 
     const a =
         new Date(
@@ -297,7 +328,8 @@ function toast(message) {
             "toast"
         );
 
-    if (!el) return;
+    if (!el)
+        return;
 
     el.textContent =
         message;
@@ -311,9 +343,11 @@ function toast(message) {
     window.__toastTimer =
         setTimeout(
             () => {
+
                 el.classList.remove(
                     "show"
                 );
+
             },
             2500
         );
@@ -558,7 +592,6 @@ function replaySymbol(symbol) {
 
         }
 
-
         else if (
             event.eventType ===
             "stockDividend"
@@ -582,7 +615,6 @@ function replaySymbol(symbol) {
             });
 
         }
-
 
         else if (
             event.eventType === "sell"
@@ -766,7 +798,6 @@ function getHoldingAtDate(
 
         }
 
-
         else if (
             event.type === "sell"
         ) {
@@ -912,6 +943,7 @@ function calculateDividendWallet() {
                     ) || 0;
 
             }
+
         );
 
 
@@ -1294,7 +1326,8 @@ function addTrade(form) {
         type === "sell"
     ) {
 
-        source = "cash";
+        source =
+            "cash";
 
     }
 
@@ -1371,7 +1404,6 @@ function addTrade(form) {
         });
 
     }
-
 
     else {
 
@@ -1566,7 +1598,6 @@ function addDividend(form) {
 
     }
 
-
     else {
 
         const base =
@@ -1732,7 +1763,9 @@ function renderDashboard() {
         data.deposits.reduce(
             (s, d) =>
                 s +
-                Number(d.amount),
+                Number(
+                    d.amount
+                ),
             0
         );
 
@@ -1771,29 +1804,49 @@ function renderDashboard() {
 
     const cards = [
 
-        ["Tổng tiền nạp",
-            money(deposits)],
+        [
+            "Tổng tiền nạp",
+            money(deposits)
+        ],
 
-        ["Tiền mặt",
-            money(cash)],
+        [
+            "Tiền mặt",
+            money(cash)
+        ],
 
-        ["Ví cổ tức",
-            money(wallet)],
+        [
+            "Ví cổ tức",
+            money(wallet)
+        ],
 
-        ["Tiền khả dụng",
-            money(cash + wallet)],
+        [
+            "Tiền khả dụng",
+            money(cash + wallet)
+        ],
 
-        ["Vốn cổ phiếu",
-            money(invested)],
+        [
+            "Vốn cổ phiếu",
+            money(invested)
+        ],
 
-        ["Cổ tức tiền mặt",
-            money(dividend)],
+        [
+            "Cổ tức tiền mặt",
+            money(dividend)
+        ],
 
-        ["Lãi tiền mặt",
-            money(calculateCashInterest())],
+        [
+            "Lãi tiền mặt",
+            money(
+                calculateCashInterest()
+            )
+        ],
 
-        ["Phí lưu ký",
-            money(calculateCustodyFee())]
+        [
+            "Phí lưu ký",
+            money(
+                calculateCustodyFee()
+            )
+        ]
 
     ];
 
@@ -1884,55 +1937,86 @@ function renderPortfolio() {
                     <div class="stock-meta">
 
                         <div class="kv">
+
                             <span>Số CP</span>
+
                             <b>
                                 ${number(
                                     p.quantity
                                 )}
                             </b>
+
                         </div>
 
+
                         <div class="kv">
-                            <span>Giá vốn BQ</span>
+
+                            <span>
+                                Giá vốn BQ
+                            </span>
+
                             <b>
                                 ${money(
                                     p.averageCost
                                 )}
                             </b>
+
                         </div>
 
+
                         <div class="kv">
-                            <span>Giá vốn còn lại</span>
+
+                            <span>
+                                Giá vốn còn lại
+                            </span>
+
                             <b>
                                 ${money(
                                     p.cost
                                 )}
                             </b>
+
                         </div>
 
+
                         <div class="kv">
+
                             <span>Số lô</span>
+
                             <b>
                                 ${p.lots.length}
                             </b>
+
                         </div>
 
+
                         <div class="kv">
-                            <span>Cổ tức tiền</span>
+
+                            <span>
+                                Cổ tức tiền
+                            </span>
+
                             <b>
                                 ${money(
                                     p.cashDividend
                                 )}
                             </b>
+
                         </div>
 
+
                         <div class="kv">
-                            <span>CP từ quyền</span>
+
+                            <span>
+                                CP từ quyền
+                            </span>
+
                             <b>
                                 ${number(
                                     p.stockDividend
                                 )}
                             </b>
+
                         </div>
 
                     </div>
@@ -2002,6 +2086,7 @@ function transactionTable(
 
                 </thead>
 
+
                 <tbody>
 
                     ${sorted.map(
@@ -2060,6 +2145,7 @@ function transactionTable(
                                 </td>
 
                                 <td>
+
                                     ${
                                         t.type === "buy"
                                             ? (
@@ -2069,6 +2155,7 @@ function transactionTable(
                                             )
                                             : "Tiền mặt"
                                     }
+
                                 </td>
 
                                 <td>
@@ -2108,6 +2195,7 @@ function renderTransactions() {
         document.getElementById(
             "transactions"
         );
+
 
     const recent =
         document.getElementById(
@@ -2211,6 +2299,7 @@ function renderDividends() {
 
                 </thead>
 
+
                 <tbody>
 
                     ${dividends.map(
@@ -2250,6 +2339,7 @@ function renderDividends() {
                                     </td>
 
                                     <td>
+
                                         ${
                                             d.type === "cash"
                                                 ? "Tiền mặt"
@@ -2257,6 +2347,7 @@ function renderDividends() {
                                                     ? "Cổ tức CP"
                                                     : "CP thưởng"
                                         }
+
                                     </td>
 
                                     <td>
@@ -2346,6 +2437,7 @@ function toggleDividendFields() {
             "cashDividendFields"
         );
 
+
     const stock =
         document.getElementById(
             "stockDividendFields"
@@ -2411,7 +2503,7 @@ function backupJSON() {
 
     const backup = {
 
-        version: 3,
+        version: 4,
 
         exportedAt:
             new Date()
@@ -2578,29 +2670,86 @@ function resetAll() {
 
 
 /* ==================================================
-   ==================================================
-   NEW PROJECTION ENGINE
-   ==================================================
+   PROJECTION HELPERS
 ================================================== */
 
 
 /*
+   Tính lãi tiền mặt theo năm.
+
+   Tiền có từ đầu năm:
+   12 tháng.
+
+   Tiền nạp mỗi tháng:
+   tính theo số tháng còn lại.
+*/
+
+function calculateYearInterest(
+    openingCash,
+    monthlyContribution,
+    annualRate
+) {
+
+    const rate =
+        Math.max(
+            0,
+            Number(annualRate) || 0
+        ) / 100;
+
+
+    let interest =
+        Math.max(
+            0,
+            openingCash
+        ) * rate;
+
+
+    const monthly =
+        Math.max(
+            0,
+            Number(
+                monthlyContribution
+            ) || 0
+        );
+
+
+    for (
+        let month = 1;
+        month <= 12;
+        month++
+    ) {
+
+        const monthsRemaining =
+            12 - month;
+
+
+        interest +=
+            monthly *
+            rate *
+            monthsRemaining /
+            12;
+
+    }
+
+
+    return interest;
+
+}
+
+
+/*
 ====================================================
-NGUYÊN TẮC:
+ENGINE
+
+CP nguồn:
 
 sourceShares
-    =
-CP nguồn ban đầu.
+
+CP đích:
 
 reinvestLots
-    =
-các lô CP mua bằng:
 
-    cổ tức tái đầu tư
-    +
-    tiền nạp thêm.
-
-Mỗi lô có:
+Mỗi lot:
 
 {
     yearBought,
@@ -2608,25 +2757,16 @@ Mỗi lô có:
     price
 }
 
-Khi tính cổ tức:
+Cổ tức CP đích chỉ tính:
 
-sourceDividend
-    =
-sourceShares × dividend.
+lot.yearBought < year
 
-reinvestDividend
-    =
-tổng từng lô tái đầu tư
-× dividend.
+KHÔNG:
 
-Không lấy:
-totalShares × dividend
+totalShares × targetDividend
 
-=> tránh tính cổ tức cho CP vừa mua
-trước khi CP đó thực sự tồn tại.
 ====================================================
 */
-
 
 function calculateProjectionScenario(
     options
@@ -2648,9 +2788,11 @@ function calculateProjectionScenario(
             0,
             Math.min(
                 totalYears,
-                Number(
-                    options.contributionYears
-                ) || 0
+                Math.floor(
+                    Number(
+                        options.contributionYears
+                    ) || 0
+                )
             )
         );
 
@@ -2660,9 +2802,11 @@ function calculateProjectionScenario(
             0,
             Math.min(
                 totalYears,
-                Number(
-                    options.reinvestYears
-                ) || 0
+                Math.floor(
+                    Number(
+                        options.reinvestYears
+                    ) || 0
+                )
             )
         );
 
@@ -2672,38 +2816,70 @@ function calculateProjectionScenario(
             1,
             Math.min(
                 totalYears,
-                Number(
-                    options.holdingYears
-                ) || totalYears
+                Math.floor(
+                    Number(
+                        options.holdingYears
+                    ) || totalYears
+                )
             )
         );
 
 
-    const startShares =
+    const sourceShares =
         Math.max(
             0,
             Number(
-                options.shares
+                options.sourceShares
             ) || 0
         );
 
 
-    const price =
+    const sourcePrice =
         Math.max(
             0,
             Number(
-                options.price
+                options.sourcePrice
             ) || 0
         );
 
 
-    const dividend =
+    const targetPrice =
         Math.max(
             0,
             Number(
-                options.dividend
+                options.targetPrice
             ) || 0
         );
+
+
+    const sourceDividend =
+        Math.max(
+            0,
+            Number(
+                options.sourceDividend
+            ) || 0
+        );
+
+
+    const targetDividend =
+        Math.max(
+            0,
+            Number(
+                options.targetDividend
+            ) || 0
+        );
+
+
+    const sourcePriceGrowth =
+        Number(
+            options.sourcePriceGrowth
+        ) || 0;
+
+
+    const targetPriceGrowth =
+        Number(
+            options.targetPriceGrowth
+        ) || 0;
 
 
     const dividendGrowth =
@@ -2712,9 +2888,9 @@ function calculateProjectionScenario(
         ) || 0;
 
 
-    const priceGrowth =
+    const targetDividendGrowth =
         Number(
-            options.priceGrowth
+            options.targetDividendGrowth
         ) || 0;
 
 
@@ -2748,6 +2924,16 @@ function calculateProjectionScenario(
         );
 
 
+    /*
+       Tiền mặt ban đầu.
+
+       Đây là tiền còn lại sau khi
+       mua CP nguồn ban đầu nếu
+       người dùng muốn mô phỏng.
+
+       Mặc định = 0.
+    */
+
     let cash =
         Math.max(
             0,
@@ -2758,34 +2944,53 @@ function calculateProjectionScenario(
 
 
     /*
-       CP nguồn không bao giờ
-       bị cộng thêm CP tái đầu tư.
+       CP nguồn KHÔNG bao giờ
+       cộng CP đích.
     */
 
-    const sourceShares =
-        startShares;
+    const fixedSourceShares =
+        sourceShares;
 
 
     /*
-       Các lô CP tái đầu tư.
+       Các lô CP đích.
+
+       Mỗi lô có thời gian riêng.
     */
 
     const reinvestLots = [];
 
 
-    let totalSourceDividend = 0;
+    let totalSourceDividend =
+        0;
 
-    let totalReinvestDividend = 0;
 
-    let totalDividend = 0;
+    let totalTargetDividend =
+        0;
 
-    let totalContribution = 0;
 
-    let totalReinvestMoney = 0;
+    let totalDividend =
+        0;
 
-    let totalNewShares = 0;
 
-    let totalInterest = 0;
+    let totalContribution =
+        0;
+
+
+    let totalReinvestMoney =
+        0;
+
+
+    let totalNewShares =
+        0;
+
+
+    let totalInterest =
+        0;
+
+
+    let totalTargetDividendUsed =
+        0;
 
 
     const rows = [];
@@ -2797,29 +3002,39 @@ function calculateProjectionScenario(
         year++
     ) {
 
-        /*
-        ============================================
-        GIÁ
-        ============================================
-        */
 
-        const currentPrice =
-            price *
+        /* ==========================================
+           GIÁ CP NGUỒN
+        ========================================== */
+
+        const currentSourcePrice =
+            sourcePrice *
             Math.pow(
                 1 +
-                priceGrowth / 100,
+                sourcePriceGrowth / 100,
                 year - 1
             );
 
 
-        /*
-        ============================================
-        CỔ TỨC / CP
-        ============================================
-        */
+        /* ==========================================
+           GIÁ CP ĐÍCH
+        ========================================== */
 
-        const dividendPerShare =
-            dividend *
+        const currentTargetPrice =
+            targetPrice *
+            Math.pow(
+                1 +
+                targetPriceGrowth / 100,
+                year - 1
+            );
+
+
+        /* ==========================================
+           CỔ TỨC CP NGUỒN
+        ========================================== */
+
+        const currentSourceDividend =
+            sourceDividend *
             Math.pow(
                 1 +
                 dividendGrowth / 100,
@@ -2827,34 +3042,42 @@ function calculateProjectionScenario(
             );
 
 
-        /*
-        ============================================
-        CP NGUỒN
-        ============================================
-        */
+        /* ==========================================
+           CỔ TỨC CP ĐÍCH
+        ========================================== */
 
-        const sourceDividend =
-            sourceShares *
-            dividendPerShare;
+        const currentTargetDividend =
+            targetDividend *
+            Math.pow(
+                1 +
+                targetDividendGrowth / 100,
+                year - 1
+            );
 
 
-        /*
-        ============================================
-        CP TÁI ĐẦU TƯ
-        ============================================
+        /* ==========================================
+           CỔ TỨC NGUỒN
 
-        Chỉ những lô đã tồn tại từ
-        trước năm hiện tại mới nhận
-        cổ tức của năm hiện tại.
+           CHỈ CP NGUỒN.
+        ========================================== */
 
-        CP mua trong năm hiện tại
-        KHÔNG được tính cổ tức
-        của cả năm.
-        */
+        const yearlySourceDividend =
+            fixedSourceShares *
+            currentSourceDividend;
 
-        let reinvestDividend = 0;
 
-        let reinvestSharesStart = 0;
+        /* ==========================================
+           CỔ TỨC CP ĐÍCH
+
+           Chỉ các lot từ năm trước.
+        ========================================== */
+
+        let reinvestSharesStart =
+            0;
+
+
+        let yearlyTargetDividend =
+            0;
 
 
         reinvestLots.forEach(
@@ -2868,9 +3091,10 @@ function calculateProjectionScenario(
                     reinvestSharesStart +=
                         lot.shares;
 
-                    reinvestDividend +=
+
+                    yearlyTargetDividend +=
                         lot.shares *
-                        dividendPerShare;
+                        currentTargetDividend;
 
                 }
 
@@ -2878,22 +3102,18 @@ function calculateProjectionScenario(
         );
 
 
-        /*
-        ============================================
-        TỔNG CỔ TỨC
-        ============================================
-        */
+        /* ==========================================
+           TỔNG CỔ TỨC
+        ========================================== */
 
         const yearlyDividend =
-            sourceDividend +
-            reinvestDividend;
+            yearlySourceDividend +
+            yearlyTargetDividend;
 
 
-        /*
-        ============================================
-        TIỀN NẠP THÊM
-        ============================================
-        */
+        /* ==========================================
+           TIỀN NẠP THÊM
+        ========================================== */
 
         let contribution = 0;
 
@@ -2909,79 +3129,47 @@ function calculateProjectionScenario(
         }
 
 
-        /*
-        ============================================
-        LÃI TIỀN MẶT
-        ============================================
+        /* ==========================================
+           LÃI TIỀN MẶT
+        ========================================== */
 
-        Tính theo tháng.
+        const yearlyInterest =
+            calculateYearInterest(
+                cash,
+                year <= contributionYears
+                    ? monthlyMoney
+                    : 0,
+                cashInterest
+            );
 
-        Tiền đầu năm có 12 tháng.
-
-        Tiền nạp tháng 1 có khoảng
-        11 tháng.
-
-        Tiền nạp tháng 12 có 0 tháng.
-        */
-
-        let yearlyInterest = 0;
-
-
-        yearlyInterest +=
-            cash *
-            cashInterest /
-            100;
-
-
-        if (
-            contribution > 0
-        ) {
-
-            for (
-                let month = 1;
-                month <= 12;
-                month++
-            ) {
-
-                const monthly =
-                    monthlyMoney;
-
-
-                const monthsRemaining =
-                    12 - month;
-
-
-                yearlyInterest +=
-                    monthly *
-                    cashInterest /
-                    100 *
-                    monthsRemaining /
-                    12;
-
-            }
-
-        }
-
-
-        /*
-        ============================================
-        CỘNG TIỀN
-        ============================================
-        */
 
         cash +=
             yearlyInterest;
+
 
         totalInterest +=
             yearlyInterest;
 
 
+        /* ==========================================
+           CỘNG TIỀN NẠP
+        ========================================== */
+
         cash +=
             contribution;
+
 
         totalContribution +=
             contribution;
 
+
+        /* ==========================================
+           CỘNG CỔ TỨC
+
+           Cả cổ tức nguồn và
+           cổ tức CP đích đều về
+           tiền mặt trước khi mua.
+        ========================================== */
 
         cash +=
             yearlyDividend;
@@ -2990,22 +3178,25 @@ function calculateProjectionScenario(
         totalDividend +=
             yearlyDividend;
 
+
         totalSourceDividend +=
-            sourceDividend;
-
-        totalReinvestDividend +=
-            reinvestDividend;
+            yearlySourceDividend;
 
 
-        /*
-        ============================================
-        TIỀN ĐƯỢC PHÉP TÁI ĐẦU TƯ
-        ============================================
-        */
+        totalTargetDividend +=
+            yearlyTargetDividend;
 
-        let purchaseMoney = 0;
 
-        let buyShares = 0;
+        /* ==========================================
+           TIỀN ĐƯỢC PHÉP TÁI ĐẦU TƯ
+        ========================================== */
+
+        let purchaseMoney =
+            0;
+
+
+        let buyShares =
+            0;
 
 
         const canReinvest =
@@ -3014,47 +3205,57 @@ function calculateProjectionScenario(
 
         if (
             canReinvest &&
-            currentPrice > 0
+            currentTargetPrice > 0
         ) {
 
             /*
-               Tỷ lệ tiền được sử dụng
-               để tái đầu tư.
+               Chỉ phần tiền được phép
+               tái đầu tư mới được dùng.
+
+               Phần còn lại vẫn giữ tiền mặt.
             */
 
-            const available =
-                cash *
-                reinvestPercent /
-                100;
-
-
-            /*
-               Chỉ mua lô 100 CP.
-            */
-
-            const possible =
-                Math.floor(
-                    available /
-                    currentPrice
+            const availableMoney =
+                Math.max(
+                    0,
+                    cash *
+                    reinvestPercent /
+                    100
                 );
 
 
+            /*
+               Tính số CP có thể mua.
+            */
+
+            const possibleShares =
+                Math.floor(
+                    availableMoney /
+                    currentTargetPrice
+                );
+
+
+            /*
+               Chỉ mua lô 100.
+            */
+
             buyShares =
                 Math.floor(
-                    possible / 100
+                    possibleShares /
+                    100
                 ) *
                 100;
 
 
             purchaseMoney =
                 buyShares *
-                currentPrice;
+                currentTargetPrice;
 
 
             /*
-               Tiền mua CP được trừ.
+               Trừ tiền mua.
 
-               Tiền còn dư giữ lại.
+               Tiền thừa giữ lại.
             */
 
             cash -=
@@ -3062,13 +3263,10 @@ function calculateProjectionScenario(
 
 
             /*
-               CP mới được đưa vào
-               reinvestLots.
+               Lưu lot CP đích.
 
-               Nhưng yearBought = year.
-
-               Do đó KHÔNG nhận cổ tức
-               của chính năm vừa mua.
+               CP này chỉ nhận cổ tức
+               từ năm sau.
             */
 
             if (
@@ -3084,7 +3282,7 @@ function calculateProjectionScenario(
                         buyShares,
 
                     price:
-                        currentPrice
+                        currentTargetPrice
 
                 });
 
@@ -3094,68 +3292,77 @@ function calculateProjectionScenario(
             totalNewShares +=
                 buyShares;
 
+
             totalReinvestMoney +=
                 purchaseMoney;
+
+
+            totalTargetDividendUsed +=
+                yearlyTargetDividend;
 
         }
 
 
-        /*
-        ============================================
-        SỐ CP TÁI ĐẦU TƯ CUỐI NĂM
-        ============================================
-        */
+        /* ==========================================
+           CP ĐÍCH CUỐI NĂM
+        ========================================== */
 
         const reinvestSharesEnd =
             reinvestLots.reduce(
-                (sum, lot) =>
-                    sum + lot.shares,
+                (
+                    sum,
+                    lot
+                ) =>
+                    sum +
+                    lot.shares,
                 0
             );
 
 
-        /*
-        ============================================
-        TỔNG CP
-        ============================================
-        */
+        /* ==========================================
+           TỔNG CP
+        ========================================== */
 
         const totalSharesEnd =
-            sourceShares +
+            fixedSourceShares +
             reinvestSharesEnd;
 
 
-        /*
-        ============================================
-        GIÁ TRỊ
-        ============================================
-        */
-
-        const stockValue =
-            totalSharesEnd *
-            currentPrice;
-
+        /* ==========================================
+           GIÁ TRỊ CP NGUỒN
+        ========================================== */
 
         const sourceValue =
-            sourceShares *
-            currentPrice;
+            fixedSourceShares *
+            currentSourcePrice;
 
 
-        const reinvestValue =
+        /* ==========================================
+           GIÁ TRỊ CP ĐÍCH
+        ========================================== */
+
+        const targetValue =
             reinvestSharesEnd *
-            currentPrice;
+            currentTargetPrice;
 
+
+        /* ==========================================
+           GIÁ TRỊ CỔ PHIẾU
+        ========================================== */
+
+        const stockValue =
+            sourceValue +
+            targetValue;
+
+
+        /* ==========================================
+           TỔNG TÀI SẢN
+        ========================================== */
 
         const totalValue =
             stockValue +
             cash;
 
-
-        /*
-        ============================================
-        THỜI GIAN NẮM GIỮ
-        ============================================
-        */
 
         const holdingActive =
             year <= holdingYears;
@@ -3165,13 +3372,16 @@ function calculateProjectionScenario(
 
             year,
 
-            sourceShares,
+            sourceShares:
+                fixedSourceShares,
 
-            sourceDividend,
+            sourceDividend:
+                yearlySourceDividend,
 
             reinvestSharesStart,
 
-            reinvestDividend,
+            targetDividend:
+                yearlyTargetDividend,
 
             yearlyDividend,
 
@@ -3180,7 +3390,11 @@ function calculateProjectionScenario(
             interest:
                 yearlyInterest,
 
-            currentPrice,
+            sourcePrice:
+                currentSourcePrice,
+
+            targetPrice:
+                currentTargetPrice,
 
             purchaseMoney,
 
@@ -3192,7 +3406,7 @@ function calculateProjectionScenario(
 
             sourceValue,
 
-            reinvestValue,
+            targetValue,
 
             stockValue,
 
@@ -3217,24 +3431,25 @@ function calculateProjectionScenario(
 
         rows,
 
-        sourceShares,
-
-        finalShares:
-            finalRow
-                ? finalRow.totalSharesEnd
-                : sourceShares,
+        sourceShares:
+            fixedSourceShares,
 
         finalSourceShares:
-            sourceShares,
+            fixedSourceShares,
 
         finalReinvestShares:
             finalRow
                 ? finalRow.reinvestSharesEnd
                 : 0,
 
+        finalShares:
+            finalRow
+                ? finalRow.totalSharesEnd
+                : fixedSourceShares,
+
         totalSourceDividend,
 
-        totalReinvestDividend,
+        totalTargetDividend,
 
         totalDividend,
 
@@ -3250,6 +3465,16 @@ function calculateProjectionScenario(
             finalRow
                 ? finalRow.cash
                 : cash,
+
+        finalSourceValue:
+            finalRow
+                ? finalRow.sourceValue
+                : 0,
+
+        finalTargetValue:
+            finalRow
+                ? finalRow.targetValue
+                : 0,
 
         finalStockValue:
             finalRow
@@ -3267,141 +3492,170 @@ function calculateProjectionScenario(
 
 
 /* ==================================================
+   READ PROJECTION INPUT
+================================================== */
+
+function getProjectionInputs() {
+
+    return {
+
+        source:
+            document.getElementById(
+                "projectionSource"
+            ).value
+                .trim()
+                .toUpperCase(),
+
+        target:
+            document.getElementById(
+                "projectionTarget"
+            ).value
+                .trim()
+                .toUpperCase(),
+
+        shares:
+            Number(
+                document.getElementById(
+                    "projectionShares"
+                ).value
+            ) || 0,
+
+        sourcePrice:
+            Number(
+                document.getElementById(
+                    "projectionSourcePrice"
+                ).value
+            ) || 0,
+
+        targetPrice:
+            Number(
+                document.getElementById(
+                    "projectionTargetPrice"
+                ).value
+            ) || 0,
+
+        monthlyMoney:
+            Number(
+                document.getElementById(
+                    "projectionMonthlyMoney"
+                ).value
+            ) || 0,
+
+        reinvestPercent:
+            Number(
+                document.getElementById(
+                    "projectionReinvest"
+                ).value
+            ) || 0,
+
+        cashInterest:
+            Number(
+                document.getElementById(
+                    "projectionCashInterest"
+                ).value
+            ) || 0,
+
+        years:
+            Number(
+                document.getElementById(
+                    "projectionYears"
+                ).value
+            ) || 1,
+
+        contributionYears:
+            Number(
+                document.getElementById(
+                    "projectionContributionYears"
+                ).value
+            ) || 0,
+
+        reinvestYears:
+            Number(
+                document.getElementById(
+                    "projectionReinvestYears"
+                ).value
+            ) || 0,
+
+        holdingYears:
+            Number(
+                document.getElementById(
+                    "projectionHoldingYears"
+                ).value
+            ) || 1,
+
+        sourcePriceGrowth:
+            Number(
+                document.getElementById(
+                    "projectionSourcePriceGrowth"
+                ).value
+            ) || 0,
+
+        targetPriceGrowth:
+            Number(
+                document.getElementById(
+                    "projectionTargetPriceGrowth"
+                ).value
+            ) || 0,
+
+        sourceWeak:
+            Number(
+                document.getElementById(
+                    "sourceScenarioWeak"
+                ).value
+            ) || 0,
+
+        sourceMedium:
+            Number(
+                document.getElementById(
+                    "sourceScenarioMedium"
+                ).value
+            ) || 0,
+
+        sourceHigh:
+            Number(
+                document.getElementById(
+                    "sourceScenarioHigh"
+                ).value
+            ) || 0,
+
+        targetWeak:
+            Number(
+                document.getElementById(
+                    "targetScenarioWeak"
+                ).value
+            ) || 0,
+
+        targetMedium:
+            Number(
+                document.getElementById(
+                    "targetScenarioMedium"
+                ).value
+            ) || 0,
+
+        targetHigh:
+            Number(
+                document.getElementById(
+                    "targetScenarioHigh"
+                ).value
+            ) || 0
+
+    };
+
+}
+
+
+/* ==================================================
    RUN PROJECTION
 ================================================== */
 
 function runDividendProjection() {
 
-    const source =
-        document.getElementById(
-            "projectionSource"
-        ).value
-            .trim()
-            .toUpperCase();
-
-
-    const target =
-        document.getElementById(
-            "projectionTarget"
-        ).value
-            .trim()
-            .toUpperCase();
-
-
-    const shares =
-        Number(
-            document.getElementById(
-                "projectionShares"
-            ).value
-        ) || 0;
-
-
-    const price =
-        Number(
-            document.getElementById(
-                "projectionPrice"
-            ).value
-        ) || 0;
-
-
-    const monthlyMoney =
-        Number(
-            document.getElementById(
-                "projectionMonthlyMoney"
-            ).value
-        ) || 0;
-
-
-    const reinvestPercent =
-        Number(
-            document.getElementById(
-                "projectionReinvest"
-            ).value
-        ) || 0;
-
-
-    const cashInterest =
-        Number(
-            document.getElementById(
-                "projectionCashInterest"
-            ).value
-        ) || 0;
-
-
-    const years =
-        Number(
-            document.getElementById(
-                "projectionYears"
-            ).value
-        ) || 1;
-
-
-    const contributionYears =
-        Number(
-            document.getElementById(
-                "projectionContributionYears"
-            ).value
-        ) || 0;
-
-
-    const reinvestYears =
-        Number(
-            document.getElementById(
-                "projectionReinvestYears"
-            ).value
-        ) || 0;
-
-
-    const holdingYears =
-        Number(
-            document.getElementById(
-                "projectionHoldingYears"
-            ).value
-        ) || years;
-
-
-    const dividendGrowth =
-        Number(
-            document.getElementById(
-                "projectionDividendGrowth"
-            ).value
-        ) || 0;
-
-
-    const priceGrowth =
-        Number(
-            document.getElementById(
-                "projectionPriceGrowth"
-            ).value
-        ) || 0;
-
-
-    const weak =
-        Number(
-            document.getElementById(
-                "scenarioWeak"
-            ).value
-        ) || 0;
-
-
-    const medium =
-        Number(
-            document.getElementById(
-                "scenarioMedium"
-            ).value
-        ) || 0;
-
-
-    const high =
-        Number(
-            document.getElementById(
-                "scenarioHigh"
-            ).value
-        ) || 0;
+    const input =
+        getProjectionInputs();
 
 
     if (
-        !source
+        !input.source
     ) {
 
         alert(
@@ -3414,11 +3668,11 @@ function runDividendProjection() {
 
 
     if (
-        price <= 0
+        !input.target
     ) {
 
         alert(
-            "Giá cổ phiếu phải lớn hơn 0."
+            "Hãy nhập mã cổ phiếu tái đầu tư."
         );
 
         return;
@@ -3426,35 +3680,98 @@ function runDividendProjection() {
     }
 
 
-    /*
-    ================================================
-    3 KỊCH BẢN
-    ================================================
-    */
+    if (
+        input.shares <= 0
+    ) {
+
+        alert(
+            "CP nguồn ban đầu phải lớn hơn 0."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        input.sourcePrice <= 0
+    ) {
+
+        alert(
+            "Giá CP nguồn phải lớn hơn 0."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        input.targetPrice <= 0
+    ) {
+
+        alert(
+            "Giá CP tái đầu tư phải lớn hơn 0."
+        );
+
+        return;
+
+    }
+
 
     const baseOptions = {
 
-        shares,
+        sourceShares:
+            input.shares,
 
-        price,
+        sourcePrice:
+            input.sourcePrice,
 
-        dividendGrowth,
+        targetPrice:
+            input.targetPrice,
 
-        priceGrowth,
+        sourcePriceGrowth:
+            input.sourcePriceGrowth,
 
-        monthlyMoney,
+        targetPriceGrowth:
+            input.targetPriceGrowth,
 
-        reinvestPercent,
+        monthlyMoney:
+            input.monthlyMoney,
 
-        cashInterest,
+        reinvestPercent:
+            input.reinvestPercent,
 
-        years,
+        cashInterest:
+            input.cashInterest,
 
-        contributionYears,
+        years:
+            input.years,
 
-        reinvestYears,
+        contributionYears:
+            input.contributionYears,
 
-        holdingYears
+        reinvestYears:
+            input.reinvestYears,
+
+        holdingYears:
+            input.holdingYears,
+
+        /*
+           Giả định tốc độ tăng cổ tức
+           của nguồn và đích giống nhau.
+
+           Có thể tách riêng sau nếu muốn.
+        */
+
+        dividendGrowth:
+            3,
+
+        targetDividendGrowth:
+            3,
+
+        initialCash:
+            0
 
     };
 
@@ -3464,8 +3781,11 @@ function runDividendProjection() {
 
             ...baseOptions,
 
-            dividend:
-                weak
+            sourceDividend:
+                input.sourceWeak,
+
+            targetDividend:
+                input.targetWeak
 
         });
 
@@ -3475,8 +3795,11 @@ function runDividendProjection() {
 
             ...baseOptions,
 
-            dividend:
-                medium
+            sourceDividend:
+                input.sourceMedium,
+
+            targetDividend:
+                input.targetMedium
 
         });
 
@@ -3486,16 +3809,19 @@ function runDividendProjection() {
 
             ...baseOptions,
 
-            dividend:
-                high
+            sourceDividend:
+                input.sourceHigh,
+
+            targetDividend:
+                input.targetHigh
 
         });
 
 
     renderProjectionSummary(
         mediumResult,
-        source,
-        target
+        input.source,
+        input.target
     );
 
 
@@ -3515,8 +3841,9 @@ function runDividendProjection() {
 
     renderProjectionTable(
         mediumResult,
-        source,
-        target
+        input.source,
+        input.target,
+        input
     );
 
 }
@@ -3541,120 +3868,213 @@ function renderProjectionSummary(
     element.innerHTML = `
 
         <div class="projection-stat">
-            <span>CP nguồn</span>
+
+            <span>
+                CP nguồn ${escapeHTML(source)}
+            </span>
+
             <strong>
                 ${projectionNumber(
                     result.finalSourceShares
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>CP tái đầu tư</span>
+
+            <span>
+                CP tái đầu tư ${escapeHTML(target)}
+            </span>
+
             <strong>
                 ${projectionNumber(
                     result.finalReinvestShares
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tổng CP</span>
+
+            <span>
+                Tổng CP
+            </span>
+
             <strong>
                 ${projectionNumber(
                     result.finalShares
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Cổ tức CP nguồn</span>
+
+            <span>
+                Cổ tức ${escapeHTML(source)}
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.totalSourceDividend
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Cổ tức CP tái đầu tư</span>
+
+            <span>
+                Cổ tức ${escapeHTML(target)}
+            </span>
+
             <strong>
                 ${projectionMoney(
-                    result.totalReinvestDividend
+                    result.totalTargetDividend
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tổng cổ tức</span>
+
+            <span>
+                Tổng cổ tức
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.totalDividend
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tiền nạp thêm</span>
+
+            <span>
+                Tiền nạp thêm
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.totalContribution
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tiền tái đầu tư</span>
+
+            <span>
+                Tiền dùng mua ${escapeHTML(target)}
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.totalReinvestMoney
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>CP mua thêm</span>
+
+            <span>
+                ${escapeHTML(target)}
+                mua thêm
+            </span>
+
             <strong>
                 ${projectionNumber(
                     result.totalNewShares
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Lãi tiền mặt</span>
+
+            <span>
+                Lãi tiền mặt
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.totalInterest
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tiền dư cuối kỳ</span>
+
+            <span>
+                Tiền dư cuối kỳ
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.finalCash
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Giá trị CP cuối kỳ</span>
+
+            <span>
+                Giá trị ${escapeHTML(source)}
+            </span>
+
             <strong>
                 ${projectionMoney(
-                    result.finalStockValue
+                    result.finalSourceValue
                 )}
             </strong>
+
         </div>
 
+
         <div class="projection-stat">
-            <span>Tổng tài sản</span>
+
+            <span>
+                Giá trị ${escapeHTML(target)}
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    result.finalTargetValue
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Tổng tài sản
+            </span>
+
             <strong>
                 ${projectionMoney(
                     result.finalTotalValue
                 )}
             </strong>
+
         </div>
 
     `;
@@ -3666,6 +4086,149 @@ function renderProjectionSummary(
    SCENARIOS
 ================================================== */
 
+function scenarioCard(
+    title,
+    result,
+    source,
+    target
+) {
+
+    return `
+
+        <div class="scenario-result">
+
+            <h3>
+                ${title}
+            </h3>
+
+
+            <p>
+                CP nguồn ${escapeHTML(source)}:
+
+                <b>
+                    ${projectionNumber(
+                        result.finalSourceShares
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                CP ${escapeHTML(target)}:
+
+                <b>
+                    ${projectionNumber(
+                        result.finalReinvestShares
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Cổ tức ${escapeHTML(source)}:
+
+                <b>
+                    ${projectionMoney(
+                        result.totalSourceDividend
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Cổ tức ${escapeHTML(target)}:
+
+                <b>
+                    ${projectionMoney(
+                        result.totalTargetDividend
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Tổng cổ tức:
+
+                <b>
+                    ${projectionMoney(
+                        result.totalDividend
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Tiền dùng mua ${escapeHTML(target)}:
+
+                <b>
+                    ${projectionMoney(
+                        result.totalReinvestMoney
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                ${escapeHTML(target)} mua thêm:
+
+                <b>
+                    ${projectionNumber(
+                        result.totalNewShares
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Tiền dư:
+
+                <b>
+                    ${projectionMoney(
+                        result.finalCash
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Giá trị ${escapeHTML(source)}:
+
+                <b>
+                    ${projectionMoney(
+                        result.finalSourceValue
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                Giá trị ${escapeHTML(target)}:
+
+                <b>
+                    ${projectionMoney(
+                        result.finalTargetValue
+                    )}
+                </b>
+            </p>
+
+
+            <p>
+                <strong>
+                    Tổng tài sản:
+
+                    ${projectionMoney(
+                        result.finalTotalValue
+                    )}
+                </strong>
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
 function renderScenarioSummary(
     scenarios
 ) {
@@ -3676,239 +4239,36 @@ function renderScenarioSummary(
         );
 
 
-    element.innerHTML = `
-
-        <div class="scenario-result">
-
-            <h3>🔴 Cổ tức yếu</h3>
-
-            <p>
-                CP nguồn:
-                <b>
-                    ${projectionNumber(
-                        scenarios.weak
-                            .finalSourceShares
-                    )}
-                </b>
-            </p>
-
-            <p>
-                CP tái đầu tư:
-                <b>
-                    ${projectionNumber(
-                        scenarios.weak
-                            .finalReinvestShares
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Cổ tức CP nguồn:
-                <b>
-                    ${projectionMoney(
-                        scenarios.weak
-                            .totalSourceDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Cổ tức CP tái đầu tư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.weak
-                            .totalReinvestDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng cổ tức:
-                <b>
-                    ${projectionMoney(
-                        scenarios.weak
-                            .totalDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tiền dư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.weak
-                            .finalCash
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng tài sản:
-                <b>
-                    ${projectionMoney(
-                        scenarios.weak
-                            .finalTotalValue
-                    )}
-                </b>
-            </p>
-
-        </div>
+    const input =
+        getProjectionInputs();
 
 
-        <div class="scenario-result">
+    element.innerHTML =
 
-            <h3>🟡 Cổ tức trung bình</h3>
+        scenarioCard(
+            "🔴 Cổ tức yếu",
+            scenarios.weak,
+            input.source,
+            input.target
+        )
 
-            <p>
-                CP nguồn:
-                <b>
-                    ${projectionNumber(
-                        scenarios.medium
-                            .finalSourceShares
-                    )}
-                </b>
-            </p>
+        +
 
-            <p>
-                CP tái đầu tư:
-                <b>
-                    ${projectionNumber(
-                        scenarios.medium
-                            .finalReinvestShares
-                    )}
-                </b>
-            </p>
+        scenarioCard(
+            "🟡 Cổ tức trung bình",
+            scenarios.medium,
+            input.source,
+            input.target
+        )
 
-            <p>
-                Cổ tức CP nguồn:
-                <b>
-                    ${projectionMoney(
-                        scenarios.medium
-                            .totalSourceDividend
-                    )}
-                </b>
-            </p>
+        +
 
-            <p>
-                Cổ tức CP tái đầu tư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.medium
-                            .totalReinvestDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng cổ tức:
-                <b>
-                    ${projectionMoney(
-                        scenarios.medium
-                            .totalDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tiền dư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.medium
-                            .finalCash
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng tài sản:
-                <b>
-                    ${projectionMoney(
-                        scenarios.medium
-                            .finalTotalValue
-                    )}
-                </b>
-            </p>
-
-        </div>
-
-
-        <div class="scenario-result">
-
-            <h3>🟢 Cổ tức cao</h3>
-
-            <p>
-                CP nguồn:
-                <b>
-                    ${projectionNumber(
-                        scenarios.high
-                            .finalSourceShares
-                    )}
-                </b>
-            </p>
-
-            <p>
-                CP tái đầu tư:
-                <b>
-                    ${projectionNumber(
-                        scenarios.high
-                            .finalReinvestShares
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Cổ tức CP nguồn:
-                <b>
-                    ${projectionMoney(
-                        scenarios.high
-                            .totalSourceDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Cổ tức CP tái đầu tư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.high
-                            .totalReinvestDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng cổ tức:
-                <b>
-                    ${projectionMoney(
-                        scenarios.high
-                            .totalDividend
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tiền dư:
-                <b>
-                    ${projectionMoney(
-                        scenarios.high
-                            .finalCash
-                    )}
-                </b>
-            </p>
-
-            <p>
-                Tổng tài sản:
-                <b>
-                    ${projectionMoney(
-                        scenarios.high
-                            .finalTotalValue
-                    )}
-                </b>
-            </p>
-
-        </div>
-
-    `;
+        scenarioCard(
+            "🟢 Cổ tức cao",
+            scenarios.high,
+            input.source,
+            input.target
+        );
 
 }
 
@@ -3920,7 +4280,8 @@ function renderScenarioSummary(
 function renderProjectionTable(
     result,
     source,
-    target
+    target,
+    input
 ) {
 
     const element =
@@ -3939,39 +4300,80 @@ function renderProjectionTable(
 
                     <th>Năm</th>
 
-                    <th>CP nguồn</th>
+                    <th>
+                        CP ${escapeHTML(source)}
+                    </th>
 
-                    <th>Cổ tức nguồn</th>
+                    <th>
+                        Cổ tức ${escapeHTML(source)}
+                    </th>
 
-                    <th>CP TĐT đầu năm</th>
+                    <th>
+                        CP ${escapeHTML(target)}
+                        đầu năm
+                    </th>
 
-                    <th>Cổ tức CP TĐT</th>
+                    <th>
+                        Cổ tức ${escapeHTML(target)}
+                    </th>
 
-                    <th>Tổng cổ tức</th>
+                    <th>
+                        Tổng cổ tức
+                    </th>
 
-                    <th>Tiền nạp</th>
+                    <th>
+                        Tiền nạp
+                    </th>
 
-                    <th>Lãi tiền mặt</th>
+                    <th>
+                        Lãi tiền mặt
+                    </th>
 
-                    <th>Giá CP</th>
+                    <th>
+                        Giá ${escapeHTML(source)}
+                    </th>
 
-                    <th>Tiền mua CP</th>
+                    <th>
+                        Giá ${escapeHTML(target)}
+                    </th>
 
-                    <th>CP mua</th>
+                    <th>
+                        Tiền mua ${escapeHTML(target)}
+                    </th>
 
-                    <th>CP TĐT cuối năm</th>
+                    <th>
+                        CP mua
+                    </th>
 
-                    <th>Tổng CP</th>
+                    <th>
+                        CP ${escapeHTML(target)}
+                        cuối năm
+                    </th>
 
-                    <th>Tiền dư</th>
+                    <th>
+                        Tổng CP
+                    </th>
 
-                    <th>Giá trị CP</th>
+                    <th>
+                        Tiền dư
+                    </th>
 
-                    <th>Tổng tài sản</th>
+                    <th>
+                        Giá trị ${escapeHTML(source)}
+                    </th>
+
+                    <th>
+                        Giá trị ${escapeHTML(target)}
+                    </th>
+
+                    <th>
+                        Tổng tài sản
+                    </th>
 
                 </tr>
 
             </thead>
+
 
             <tbody>
 
@@ -3984,11 +4386,13 @@ function renderProjectionTable(
                                 ${row.year}
                             </td>
 
+
                             <td>
                                 ${projectionNumber(
                                     row.sourceShares
                                 )}
                             </td>
+
 
                             <td>
                                 ${projectionMoney(
@@ -3996,17 +4400,20 @@ function renderProjectionTable(
                                 )}
                             </td>
 
+
                             <td>
                                 ${projectionNumber(
                                     row.reinvestSharesStart
                                 )}
                             </td>
 
+
                             <td>
                                 ${projectionMoney(
-                                    row.reinvestDividend
+                                    row.targetDividend
                                 )}
                             </td>
+
 
                             <td>
                                 ${projectionMoney(
@@ -4014,11 +4421,13 @@ function renderProjectionTable(
                                 )}
                             </td>
 
+
                             <td>
                                 ${projectionMoney(
                                     row.contribution
                                 )}
                             </td>
+
 
                             <td>
                                 ${projectionMoney(
@@ -4026,11 +4435,20 @@ function renderProjectionTable(
                                 )}
                             </td>
 
+
                             <td>
                                 ${projectionMoney(
-                                    row.currentPrice
+                                    row.sourcePrice
                                 )}
                             </td>
+
+
+                            <td>
+                                ${projectionMoney(
+                                    row.targetPrice
+                                )}
+                            </td>
+
 
                             <td>
                                 ${projectionMoney(
@@ -4038,11 +4456,20 @@ function renderProjectionTable(
                                 )}
                             </td>
 
+
                             <td class="projection-buy">
-                                +${projectionNumber(
-                                    row.buyShares
-                                )}
+
+                                ${
+                                    row.buyShares > 0
+                                        ? "+" +
+                                          projectionNumber(
+                                              row.buyShares
+                                          )
+                                        : "0"
+                                }
+
                             </td>
+
 
                             <td>
                                 ${projectionNumber(
@@ -4050,28 +4477,47 @@ function renderProjectionTable(
                                 )}
                             </td>
 
+
                             <td>
                                 ${projectionNumber(
                                     row.totalSharesEnd
                                 )}
                             </td>
 
+
                             <td class="projection-cash">
+
                                 ${projectionMoney(
                                     row.cash
                                 )}
+
                             </td>
 
+
                             <td>
+
                                 ${projectionMoney(
-                                    row.stockValue
+                                    row.sourceValue
                                 )}
+
                             </td>
 
+
                             <td>
+
+                                ${projectionMoney(
+                                    row.targetValue
+                                )}
+
+                            </td>
+
+
+                            <td>
+
                                 ${projectionMoney(
                                     row.totalValue
                                 )}
+
                             </td>
 
                         </tr>
@@ -4086,80 +4532,147 @@ function renderProjectionTable(
 
         <div class="projection-note">
 
-            <b>Logic dự phóng:</b>
+            <strong>
+                Logic dự phóng:
+            </strong>
 
             <br><br>
 
-            ${escapeHTML(
-                source
-            )}
 
-            là nguồn cổ phiếu ban đầu.
+            <b>
+                ${escapeHTML(source)}
+            </b>
+
+            là cổ phiếu nguồn ban đầu.
 
             <br>
 
-            ${escapeHTML(
-                target || "Mã tái đầu tư"
+            CP nguồn được giữ riêng và
+            không bị cộng với CP tái đầu tư.
+
+
+            <br><br>
+
+
+            <b>
+                ${escapeHTML(source)}
+                → cổ tức
+            </b>
+
+            <br>
+
+            Cổ tức nguồn =
+            CP nguồn × cổ tức/CP nguồn.
+
+
+            <br><br>
+
+
+            <b>
+                Cổ tức ${escapeHTML(target)}
+            </b>
+
+            <br>
+
+            Chỉ các lô
+            ${escapeHTML(target)}
+            đã mua từ năm trước
+            mới được tính cổ tức.
+
+            <br>
+
+            ${escapeHTML(target)}
+            vừa mua trong năm
+            không nhận cổ tức của năm đó.
+
+
+            <br><br>
+
+
+            <b>
+                Tiền nạp thêm
+            </b>
+
+            <br>
+
+            ${projectionMoney(
+                input.monthlyMoney
             )}
+            / tháng trong
+            ${input.contributionYears}
+            năm đầu.
 
-            là nơi mua cổ phiếu bằng
-            cổ tức + tiền nạp thêm.
 
             <br><br>
+
 
             <b>
-                Cổ tức nguồn
+                Tái đầu tư
             </b>
 
-            =
-            CP nguồn × cổ tức/CP.
+            <br>
+
+            ${
+                input.reinvestPercent
+            }%
+
+            tiền khả dụng được dùng để
+            mua ${escapeHTML(target)}.
+
 
             <br><br>
+
 
             <b>
-                Cổ tức CP tái đầu tư
+                Mua theo lô
             </b>
 
-            chỉ tính trên những CP
-            đã được mua từ các năm trước.
+            <br>
 
-            CP vừa mua trong năm
-            không nhận cổ tức của cả năm đó.
+            Chỉ mua được bội số của
+            <b>100 CP</b>.
+
+            <br>
+
+            Phần tiền chưa đủ một lô
+            100 CP được giữ lại làm
+            tiền mặt.
+
 
             <br><br>
 
-            Tiền nạp thêm chỉ phát sinh
-            trong:
 
             <b>
-                ${document.getElementById(
-                    "projectionContributionYears"
-                ).value || 0}
-                năm đầu.
+                Lãi tiền mặt
             </b>
 
-            <br><br>
+            <br>
 
-            Tái đầu tư cổ tức chỉ hoạt động
-            trong:
+            Tiền còn dư tiếp tục sinh lãi
+            theo mức:
 
             <b>
-                ${document.getElementById(
-                    "projectionReinvestYears"
-                ).value || 0}
-                năm.
+                ${input.cashInterest}%/năm
+            </b>.
+
+
+            <br><br>
+
+
+            <b>
+                Giá trị cuối kỳ
             </b>
 
+            <br>
+
+            Giá trị ${escapeHTML(source)}
+            và giá trị ${escapeHTML(target)}
+            được tính riêng bằng
+            giá của từng mã.
+
+
             <br><br>
 
-            Chỉ mua theo
-            <b>lô 100 CP</b>.
-
-            Phần tiền không đủ mua lô 100
-            được giữ lại làm tiền mặt
-            và tiếp tục sinh lãi.
-
-            <br><br>
 
             Dự phóng hoàn toàn độc lập
             với danh mục thật.
