@@ -1,35 +1,42 @@
 /*
 ====================================================
 ĐẦU TƯ CỔ TỨC
-APP.JS - BẢN HOÀN CHỈNH
+APP.JS
 ====================================================
 
-- Nạp tiền
-- Mua / bán
-- FIFO
-- Phí giao dịch
-- Phí lưu ký
-- Cổ tức tiền mặt
-- Cổ tức cổ phiếu
-- Cổ phiếu thưởng
-- Ví cổ tức
-- Lãi tiền mặt tính theo ngày
-- Backup / Restore
-- Dự phóng
-- 3 kịch bản cổ tức:
-  Yếu / Trung bình / Cao
-- Tiền dư chuyển sang năm sau
-- Mua theo lô 100 CP
-- Không ảnh hưởng danh mục thật
+LOGIC DỰ PHÓNG:
+
+NGUỒN 1:
+CP GỐC
+    ↓
+Cổ tức
+    ↓
+Tiền tái đầu tư
+
+NGUỒN 2:
+CP MUA TỪ:
+    - Cổ tức tái đầu tư
+    - Tiền nạp thêm
+    ↓
+Cổ tức của nguồn 2
+    ↓
+Tiền tái đầu tư
+
+KHÔNG:
+CP cuối kỳ × cổ tức
+
+CÓ:
+CP nguồn × cổ tức
++
+CP tái đầu tư đã tồn tại đủ thời gian × cổ tức
+
+Mua theo lô 100 CP.
+Tiền chưa đủ mua 100 CP giữ lại.
 ====================================================
 */
 
 
-/* ==================================================
-   STORAGE
-================================================== */
-
-const STORAGE_KEY = "dautucotuc_v2";
+const STORAGE_KEY = "dautucotuc_v3";
 
 
 const DEFAULT_DATA = {
@@ -123,6 +130,38 @@ function number(value, digits = 0) {
 }
 
 
+function projectionMoney(value) {
+
+    return new Intl.NumberFormat(
+        "vi-VN",
+        {
+            maximumFractionDigits: 0
+        }
+    ).format(
+        Math.round(
+            Number(value) || 0
+        )
+    ) + " đ";
+
+}
+
+
+function projectionNumber(value) {
+
+    return new Intl.NumberFormat(
+        "vi-VN",
+        {
+            maximumFractionDigits: 0
+        }
+    ).format(
+        Math.round(
+            Number(value) || 0
+        )
+    );
+
+}
+
+
 function escapeHTML(value) {
 
     return String(value ?? "")
@@ -147,10 +186,14 @@ function daysBetween(start, end) {
     }
 
     const a =
-        new Date(start + "T00:00:00");
+        new Date(
+            start + "T00:00:00"
+        );
 
     const b =
-        new Date(end + "T00:00:00");
+        new Date(
+            end + "T00:00:00"
+        );
 
     return Math.max(
         0,
@@ -180,7 +223,8 @@ function mergeData(base, source) {
 
         } else {
 
-            base[key] = source[key];
+            base[key] =
+                source[key];
 
         }
 
@@ -192,7 +236,7 @@ function mergeData(base, source) {
 
 
 /* ==================================================
-   LOAD / SAVE
+   STORAGE
 ================================================== */
 
 function loadData() {
@@ -206,26 +250,24 @@ function loadData() {
 
         if (!saved) {
 
-            return clone(DEFAULT_DATA);
+            return clone(
+                DEFAULT_DATA
+            );
 
         }
 
-        const parsed =
-            JSON.parse(saved);
-
         return mergeData(
             clone(DEFAULT_DATA),
-            parsed
+            JSON.parse(saved)
         );
 
     } catch (error) {
 
-        console.error(
-            "Load error:",
-            error
-        );
+        console.error(error);
 
-        return clone(DEFAULT_DATA);
+        return clone(
+            DEFAULT_DATA
+        );
 
     }
 
@@ -255,16 +297,12 @@ function toast(message) {
             "toast"
         );
 
-    if (!el) {
-        return;
-    }
+    if (!el) return;
 
     el.textContent =
         message;
 
-    el.classList.add(
-        "show"
-    );
+    el.classList.add("show");
 
     clearTimeout(
         window.__toastTimer
@@ -273,11 +311,9 @@ function toast(message) {
     window.__toastTimer =
         setTimeout(
             () => {
-
                 el.classList.remove(
                     "show"
                 );
-
             },
             2500
         );
@@ -286,22 +322,19 @@ function toast(message) {
 
 
 /* ==================================================
-   TRADING FEE
+   FEE
 ================================================== */
 
-function calculateTradingFee(
-    amount
-) {
-
-    const feePercent =
-        Number(
-            data.settings.fee
-        ) || 0;
+function calculateTradingFee(amount) {
 
     return (
         Number(amount) || 0
     ) *
-    feePercent /
+    (
+        Number(
+            data.settings.fee
+        ) || 0
+    ) /
     100;
 
 }
@@ -318,10 +351,6 @@ function addDeposit(form) {
             form.amount.value
         );
 
-    const date =
-        form.date.value ||
-        today();
-
     if (amount <= 0) {
 
         throw new Error(
@@ -335,7 +364,8 @@ function addDeposit(form) {
         id:
             uid("deposit"),
 
-        date,
+        date:
+            form.date.value || today(),
 
         amount,
 
@@ -359,7 +389,7 @@ function addDeposit(form) {
 
 
 /* ==================================================
-   SYMBOLS
+   SYMBOL
 ================================================== */
 
 function getSymbols() {
@@ -368,33 +398,23 @@ function getSymbols() {
         new Set();
 
     data.transactions.forEach(
-        transaction => {
+        t => {
 
-            if (
-                transaction.symbol
-            ) {
-
+            if (t.symbol)
                 symbols.add(
-                    transaction.symbol
+                    t.symbol
                 );
-
-            }
 
         }
     );
 
     data.dividends.forEach(
-        dividend => {
+        d => {
 
-            if (
-                dividend.symbol
-            ) {
-
+            if (d.symbol)
                 symbols.add(
-                    dividend.symbol
+                    d.symbol
                 );
-
-            }
 
         }
     );
@@ -441,7 +461,9 @@ function replaySymbol(symbol) {
             d =>
                 d.symbol === symbol &&
                 d.type !== "cash" &&
-                Number(d.receivedQty) > 0
+                Number(
+                    d.receivedQty
+                ) > 0
         )
         .forEach(
             d => {
@@ -475,19 +497,14 @@ function replaySymbol(symbol) {
     events.sort(
         (a, b) => {
 
-            const dateCompare =
+            const result =
                 String(a.date)
                     .localeCompare(
                         String(b.date)
                     );
 
-            if (
-                dateCompare !== 0
-            ) {
-
-                return dateCompare;
-
-            }
+            if (result !== 0)
+                return result;
 
             const priority = {
 
@@ -535,10 +552,7 @@ function replaySymbol(symbol) {
                 price:
                     Number(
                         event.price
-                    ) || 0,
-
-                source:
-                    "buy"
+                    ) || 0
 
             });
 
@@ -563,10 +577,7 @@ function replaySymbol(symbol) {
                         event.qty
                     ) || 0,
 
-                price: 0,
-
-                source:
-                    "dividend"
+                price: 0
 
             });
 
@@ -589,11 +600,8 @@ function replaySymbol(symbol) {
 
                 if (
                     remaining <= 0
-                ) {
-
+                )
                     break;
-
-                }
 
 
                 const take =
@@ -618,7 +626,7 @@ function replaySymbol(symbol) {
             ) {
 
                 throw new Error(
-                    `Không đủ ${symbol} để bán ${number(event.qty)} CP.`
+                    `Không đủ ${symbol} để bán.`
                 );
 
             }
@@ -636,10 +644,6 @@ function replaySymbol(symbol) {
 
 }
 
-
-/* ==================================================
-   HOLDINGS
-================================================== */
 
 function getHoldingLots(symbol) {
 
@@ -689,7 +693,7 @@ function getHoldingAtDate(
                     date:
                         t.date,
 
-                    eventType:
+                    type:
                         t.type,
 
                     qty:
@@ -718,7 +722,7 @@ function getHoldingAtDate(
                     date:
                         d.payDate,
 
-                    eventType:
+                    type:
                         "stockDividend",
 
                     qty:
@@ -749,7 +753,8 @@ function getHoldingAtDate(
     ) {
 
         if (
-            event.eventType === "buy"
+            event.type === "buy" ||
+            event.type === "stockDividend"
         ) {
 
             lots.push({
@@ -763,22 +768,7 @@ function getHoldingAtDate(
 
 
         else if (
-            event.eventType ===
-            "stockDividend"
-        ) {
-
-            lots.push({
-
-                qty:
-                    event.qty
-
-            });
-
-        }
-
-
-        else if (
-            event.eventType === "sell"
+            event.type === "sell"
         ) {
 
             let remaining =
@@ -791,11 +781,8 @@ function getHoldingAtDate(
 
                 if (
                     remaining <= 0
-                ) {
-
+                )
                     break;
-
-                }
 
 
                 const take =
@@ -837,11 +824,11 @@ function calculateCash() {
 
 
     data.deposits.forEach(
-        deposit => {
+        d => {
 
             cash +=
                 Number(
-                    deposit.amount
+                    d.amount
                 ) || 0;
 
         }
@@ -849,28 +836,28 @@ function calculateCash() {
 
 
     data.transactions.forEach(
-        transaction => {
+        t => {
 
             if (
-                transaction.type === "buy" &&
-                transaction.source === "cash"
+                t.type === "buy" &&
+                t.source === "cash"
             ) {
 
                 cash -=
                     Number(
-                        transaction.total
+                        t.total
                     ) || 0;
 
             }
 
 
             if (
-                transaction.type === "sell"
+                t.type === "sell"
             ) {
 
                 cash +=
                     Number(
-                        transaction.net
+                        t.net
                     ) || 0;
 
             }
@@ -938,12 +925,6 @@ function calculateDividendWallet() {
 
 /* ==================================================
    CASH INTEREST
-==================================================
-
-   Lãi tiền mặt:
-   - Tính theo ngày
-   - Dựa trên số dư tiền mặt
-   - Lãi suất chỉnh được
 ================================================== */
 
 function calculateCashInterest() {
@@ -952,16 +933,16 @@ function calculateCashInterest() {
 
 
     data.deposits.forEach(
-        deposit => {
+        d => {
 
             events.push({
 
                 date:
-                    deposit.date,
+                    d.date,
 
                 delta:
                     Number(
-                        deposit.amount
+                        d.amount
                     ) || 0
 
             });
@@ -971,23 +952,21 @@ function calculateCashInterest() {
 
 
     data.transactions.forEach(
-        transaction => {
+        t => {
 
             if (
-                transaction.type === "buy" &&
-                transaction.source === "cash"
+                t.type === "buy" &&
+                t.source === "cash"
             ) {
 
                 events.push({
 
                     date:
-                        transaction.date,
+                        t.date,
 
                     delta:
-                        -(
-                            Number(
-                                transaction.total
-                            ) || 0
+                        -Number(
+                            t.total
                         )
 
                 });
@@ -996,18 +975,18 @@ function calculateCashInterest() {
 
 
             if (
-                transaction.type === "sell"
+                t.type === "sell"
             ) {
 
                 events.push({
 
                     date:
-                        transaction.date,
+                        t.date,
 
                     delta:
                         Number(
-                            transaction.net
-                        ) || 0
+                            t.net
+                        )
 
                 });
 
@@ -1019,11 +998,8 @@ function calculateCashInterest() {
 
     if (
         events.length === 0
-    ) {
-
+    )
         return 0;
-
-    }
 
 
     events.sort(
@@ -1039,7 +1015,7 @@ function calculateCashInterest() {
 
     let interest = 0;
 
-    let previousDate =
+    let previous =
         events[0].date;
 
 
@@ -1047,17 +1023,14 @@ function calculateCashInterest() {
         const event of events
     ) {
 
-        if (
-            event.date >
-            previousDate
-        ) {
+        const days =
+            daysBetween(
+                previous,
+                event.date
+            );
 
-            const days =
-                daysBetween(
-                    previousDate,
-                    event.date
-                );
 
+        if (days > 0) {
 
             interest +=
                 Math.max(
@@ -1079,8 +1052,7 @@ function calculateCashInterest() {
         balance +=
             event.delta;
 
-
-        previousDate =
+        previous =
             event.date;
 
     }
@@ -1088,7 +1060,7 @@ function calculateCashInterest() {
 
     const finalDays =
         daysBetween(
-            previousDate,
+            previous,
             today()
         );
 
@@ -1117,24 +1089,18 @@ function calculateCashInterest() {
 
 
 /* ==================================================
-   CUSTODY FEE
+   CUSTODY
 ================================================== */
 
 function calculateCustodyFee() {
 
     if (
         !data.settings.custodyEnabled
-    ) {
-
+    )
         return 0;
-
-    }
 
 
     let total = 0;
-
-    const endDate =
-        today();
 
 
     for (
@@ -1147,27 +1113,21 @@ function calculateCustodyFee() {
             );
 
 
-        for (
-            const lot of lots
-        ) {
+        lots.forEach(
+            lot => {
 
-            const days =
-                daysBetween(
-                    lot.date,
-                    endDate
-                );
-
-
-            total +=
-                lot.qty *
-                (
+                total +=
+                    lot.qty *
                     Number(
                         data.settings.custody
-                    ) || 0
-                ) *
-                days;
+                    ) *
+                    daysBetween(
+                        lot.date,
+                        today()
+                    );
 
-        }
+            }
+        );
 
     }
 
@@ -1186,122 +1146,100 @@ function getPortfolio() {
     const result = [];
 
 
-    for (
-        const symbol of getSymbols()
-    ) {
+    getSymbols().forEach(
+        symbol => {
 
-        const lots =
-            getHoldingLots(
-                symbol
-            );
-
-
-        const quantity =
-            lots.reduce(
-                (sum, lot) =>
-                    sum + lot.qty,
-                0
-            );
+            const lots =
+                getHoldingLots(
+                    symbol
+                );
 
 
-        const cost =
-            lots.reduce(
-                (sum, lot) =>
-                    sum +
-                    lot.qty *
-                    lot.price,
-                0
-            );
-
-
-        const averageCost =
-            quantity > 0
-                ? cost / quantity
-                : 0;
-
-
-        const transactionFees =
-            data.transactions
-                .filter(
-                    t =>
-                        t.symbol === symbol
-                )
-                .reduce(
-                    (sum, t) =>
-                        sum +
-                        (
-                            Number(t.fee) || 0
-                        ),
+            const quantity =
+                lots.reduce(
+                    (s, l) =>
+                        s + l.qty,
                     0
                 );
 
 
-        const cashDividend =
-            data.dividends
-                .filter(
-                    d =>
-                        d.symbol === symbol &&
-                        d.type === "cash"
-                )
-                .reduce(
-                    (sum, d) =>
-                        sum +
-                        (
+            const cost =
+                lots.reduce(
+                    (s, l) =>
+                        s +
+                        l.qty *
+                        l.price,
+                    0
+                );
+
+
+            const averageCost =
+                quantity
+                    ? cost / quantity
+                    : 0;
+
+
+            const cashDividend =
+                data.dividends
+                    .filter(
+                        d =>
+                            d.symbol === symbol &&
+                            d.type === "cash"
+                    )
+                    .reduce(
+                        (s, d) =>
+                            s +
                             Number(
                                 d.cashTotal
-                            ) || 0
-                        ),
-                    0
-                );
+                            ),
+                        0
+                    );
 
 
-        const stockDividend =
-            data.dividends
-                .filter(
-                    d =>
-                        d.symbol === symbol &&
-                        d.type !== "cash"
-                )
-                .reduce(
-                    (sum, d) =>
-                        sum +
-                        (
+            const stockDividend =
+                data.dividends
+                    .filter(
+                        d =>
+                            d.symbol === symbol &&
+                            d.type !== "cash"
+                    )
+                    .reduce(
+                        (s, d) =>
+                            s +
                             Number(
                                 d.receivedQty
-                            ) || 0
-                        ),
-                    0
-                );
+                            ),
+                        0
+                    );
 
 
-        result.push({
+            result.push({
 
-            symbol,
+                symbol,
 
-            lots,
+                lots,
 
-            quantity,
+                quantity,
 
-            cost,
+                cost,
 
-            averageCost,
+                averageCost,
 
-            transactionFees,
+                cashDividend,
 
-            cashDividend,
+                stockDividend
 
-            stockDividend
+            });
 
-        });
-
-    }
+        }
+    );
 
 
     return result.filter(
-        item =>
-            item.quantity > 0 ||
-            item.cashDividend > 0 ||
-            item.stockDividend > 0
+        x =>
+            x.quantity > 0 ||
+            x.cashDividend > 0 ||
+            x.stockDividend > 0
     );
 
 }
@@ -1324,7 +1262,7 @@ function addTrade(form) {
             .trim()
             .toUpperCase();
 
-    const quantity =
+    const qty =
         Number(
             form.qty.value
         );
@@ -1341,21 +1279,16 @@ function addTrade(form) {
     if (
         !date ||
         !symbol ||
-        quantity <= 0 ||
+        qty <= 0 ||
         price < 0
     ) {
 
         throw new Error(
-            "Kiểm tra lại thông tin giao dịch."
+            "Kiểm tra thông tin giao dịch."
         );
 
     }
 
-
-    /*
-       Khi bán thì nguồn tiền
-       luôn quay về tiền mặt.
-    */
 
     if (
         type === "sell"
@@ -1367,7 +1300,7 @@ function addTrade(form) {
 
 
     const value =
-        quantity *
+        qty *
         price;
 
 
@@ -1387,45 +1320,25 @@ function addTrade(form) {
     ) {
 
         if (
-            source === "cash"
+            source === "cash" &&
+            calculateCash() < total
         ) {
 
-            const cash =
-                calculateCash();
-
-
-            if (
-                cash <
-                total - 0.000001
-            ) {
-
-                throw new Error(
-                    "Không đủ tiền mặt."
-                );
-
-            }
+            throw new Error(
+                "Không đủ tiền mặt."
+            );
 
         }
 
 
         if (
-            source === "dividend"
+            source === "dividend" &&
+            calculateDividendWallet() < total
         ) {
 
-            const wallet =
-                calculateDividendWallet();
-
-
-            if (
-                wallet <
-                total - 0.000001
-            ) {
-
-                throw new Error(
-                    "Không đủ tiền trong ví cổ tức."
-                );
-
-            }
+            throw new Error(
+                "Không đủ ví cổ tức."
+            );
 
         }
 
@@ -1442,17 +1355,13 @@ function addTrade(form) {
 
             symbol,
 
-            qty:
-                quantity,
+            qty,
 
             price,
 
             fee,
 
             total,
-
-            net:
-                -total,
 
             source,
 
@@ -1473,8 +1382,7 @@ function addTrade(form) {
 
 
         if (
-            holding <
-            quantity - 0.000001
+            holding < qty
         ) {
 
             throw new Error(
@@ -1489,48 +1397,6 @@ function addTrade(form) {
             fee;
 
 
-        const lots =
-            getHoldingLots(
-                symbol
-            );
-
-
-        let remaining =
-            quantity;
-
-        let costBasis = 0;
-
-
-        for (
-            const lot of lots
-        ) {
-
-            if (
-                remaining <= 0
-            ) {
-
-                break;
-
-            }
-
-
-            const take =
-                Math.min(
-                    lot.qty,
-                    remaining
-                );
-
-
-            costBasis +=
-                take *
-                lot.price;
-
-            remaining -=
-                take;
-
-        }
-
-
         data.transactions.push({
 
             id:
@@ -1543,8 +1409,7 @@ function addTrade(form) {
 
             symbol,
 
-            qty:
-                quantity,
+            qty,
 
             price,
 
@@ -1558,11 +1423,6 @@ function addTrade(form) {
             source:
                 "cash",
 
-            costBasis,
-
-            realized:
-                net - costBasis,
-
             note:
                 form.note.value.trim()
 
@@ -1573,13 +1433,11 @@ function addTrade(form) {
 
     try {
 
-        for (
-            const s of getSymbols()
-        ) {
-
-            getHoldingLots(s);
-
-        }
+        getSymbols()
+            .forEach(
+                s =>
+                    getHoldingLots(s)
+            );
 
     } catch (error) {
 
@@ -1604,7 +1462,7 @@ function addTrade(form) {
 
 
 /* ==================================================
-   ADD DIVIDEND
+   DIVIDEND
 ================================================== */
 
 function addDividend(form) {
@@ -1642,7 +1500,7 @@ function addDividend(form) {
             getHoldingAtDate(
                 symbol,
                 recordDate
-            ) + 0.000001
+            )
         );
 
 
@@ -1651,7 +1509,7 @@ function addDividend(form) {
     ) {
 
         throw new Error(
-            `Không có ${symbol} đủ điều kiện nhận cổ tức tại ngày chốt quyền.`
+            `Không có ${symbol} đủ điều kiện nhận cổ tức.`
         );
 
     }
@@ -1682,29 +1540,29 @@ function addDividend(form) {
         type === "cash"
     ) {
 
-        const cashPerShare =
+        const perShare =
             Number(
                 form.cashPerShare.value
             );
 
 
         if (
-            cashPerShare <= 0
+            perShare <= 0
         ) {
 
             throw new Error(
-                "Cổ tức tiền / CP phải lớn hơn 0."
+                "Cổ tức / CP phải lớn hơn 0."
             );
 
         }
 
 
         dividend.cashPerShare =
-            cashPerShare;
+            perShare;
 
         dividend.cashTotal =
             eligible *
-            cashPerShare;
+            perShare;
 
     }
 
@@ -1754,7 +1612,6 @@ function addDividend(form) {
         dividend
     );
 
-
     saveData();
 
     form.reset();
@@ -1771,13 +1628,10 @@ function addDividend(form) {
     form.ratioNew.value =
         1;
 
-    form.cashPerShare.value =
-        0;
-
     toggleDividendFields();
 
     toast(
-        "Đã lưu quyền cổ tức."
+        "Đã lưu cổ tức."
     );
 
 }
@@ -1789,44 +1643,32 @@ function addDividend(form) {
 
 function deleteTransaction(id) {
 
+    if (
+        !confirm(
+            "Xóa giao dịch này?"
+        )
+    )
+        return;
+
+
     const backup =
         clone(data);
 
 
-    const index =
-        data.transactions.findIndex(
+    data.transactions =
+        data.transactions.filter(
             t =>
-                t.id === id
+                t.id !== id
         );
-
-
-    if (
-        index === -1
-    ) {
-
-        return;
-
-    }
-
-
-    data.transactions.splice(
-        index,
-        1
-    );
 
 
     try {
 
-        for (
-            const symbol of getSymbols()
-        ) {
-
-            getHoldingLots(
-                symbol
+        getSymbols()
+            .forEach(
+                s =>
+                    getHoldingLots(s)
             );
-
-        }
-
 
         saveData();
 
@@ -1856,11 +1698,8 @@ function deleteDividend(id) {
         !confirm(
             "Xóa quyền cổ tức này?"
         )
-    ) {
-
+    )
         return;
-
-    }
 
 
     data.dividends =
@@ -1891,11 +1730,9 @@ function renderDashboard() {
 
     const deposits =
         data.deposits.reduce(
-            (sum, d) =>
-                sum +
-                (
-                    Number(d.amount) || 0
-                ),
+            (s, d) =>
+                s +
+                Number(d.amount),
             0
         );
 
@@ -1904,101 +1741,74 @@ function renderDashboard() {
         calculateCash();
 
 
-    const dividendWallet =
+    const wallet =
         calculateDividendWallet();
-
-
-    const available =
-        cash +
-        dividendWallet;
 
 
     const invested =
         portfolio.reduce(
-            (sum, item) =>
-                sum + item.cost,
+            (s, p) =>
+                s + p.cost,
             0
         );
 
 
-    const cashDividend =
+    const dividend =
         data.dividends
             .filter(
                 d =>
                     d.type === "cash"
             )
             .reduce(
-                (sum, d) =>
-                    sum +
-                    (
-                        Number(
-                            d.cashTotal
-                        ) || 0
+                (s, d) =>
+                    s +
+                    Number(
+                        d.cashTotal
                     ),
                 0
             );
 
 
-    const interest =
-        calculateCashInterest();
-
-
-    const custody =
-        calculateCustodyFee();
-
-
     const cards = [
 
-        [
-            "Tổng tiền nạp",
-            money(deposits)
-        ],
+        ["Tổng tiền nạp",
+            money(deposits)],
 
-        [
-            "Tiền mặt",
-            money(cash)
-        ],
+        ["Tiền mặt",
+            money(cash)],
 
-        [
-            "Ví cổ tức",
-            money(dividendWallet)
-        ],
+        ["Ví cổ tức",
+            money(wallet)],
 
-        [
-            "Tiền khả dụng",
-            money(available)
-        ],
+        ["Tiền khả dụng",
+            money(cash + wallet)],
 
-        [
-            "Vốn cổ phiếu",
-            money(invested)
-        ],
+        ["Vốn cổ phiếu",
+            money(invested)],
 
-        [
-            "Cổ tức tiền mặt",
-            money(cashDividend)
-        ],
+        ["Cổ tức tiền mặt",
+            money(dividend)],
 
-        [
-            "Lãi tiền mặt",
-            money(interest)
-        ],
+        ["Lãi tiền mặt",
+            money(calculateCashInterest())],
 
-        [
-            "Phí lưu ký",
-            money(custody)
-        ]
+        ["Phí lưu ký",
+            money(calculateCustodyFee())]
 
     ];
 
 
-    const dashboard =
+    const element =
         document.getElementById(
-            "dashboard"
+            "dashboardCards"
         );
 
 
-    dashboard.innerHTML =
+    if (!element)
+        return;
+
+
+    element.innerHTML =
         cards.map(
             card => `
 
@@ -2026,19 +1836,21 @@ function renderDashboard() {
 
 function renderPortfolio() {
 
-    const portfolio =
-        getPortfolio();
-
-
     const element =
         document.getElementById(
             "portfolio"
         );
 
 
-    if (
-        portfolio.length === 0
-    ) {
+    if (!element)
+        return;
+
+
+    const portfolio =
+        getPortfolio();
+
+
+    if (!portfolio.length) {
 
         element.innerHTML = `
 
@@ -2046,7 +1858,6 @@ function renderPortfolio() {
 
                 <div class="hint">
                     Chưa có cổ phiếu.
-                    Hãy thêm giao dịch mua đầu tiên.
                 </div>
 
             </div>
@@ -2060,103 +1871,68 @@ function renderPortfolio() {
 
     element.innerHTML =
         portfolio.map(
-            item => `
+            p => `
 
                 <div class="card stock-card">
 
                     <h3>
                         ${escapeHTML(
-                            item.symbol
+                            p.symbol
                         )}
                     </h3>
 
                     <div class="stock-meta">
 
                         <div class="kv">
-
-                            <span>
-                                Số CP
-                            </span>
-
+                            <span>Số CP</span>
                             <b>
                                 ${number(
-                                    item.quantity
+                                    p.quantity
                                 )}
                             </b>
-
                         </div>
 
-
                         <div class="kv">
-
-                            <span>
-                                Giá vốn BQ
-                            </span>
-
+                            <span>Giá vốn BQ</span>
                             <b>
                                 ${money(
-                                    item.averageCost
+                                    p.averageCost
                                 )}
                             </b>
-
                         </div>
 
-
                         <div class="kv">
-
-                            <span>
-                                Giá vốn còn lại
-                            </span>
-
+                            <span>Giá vốn còn lại</span>
                             <b>
                                 ${money(
-                                    item.cost
+                                    p.cost
                                 )}
                             </b>
-
                         </div>
 
-
                         <div class="kv">
-
-                            <span>
-                                Số lô
-                            </span>
-
+                            <span>Số lô</span>
                             <b>
-                                ${item.lots.length}
+                                ${p.lots.length}
                             </b>
-
                         </div>
 
-
                         <div class="kv">
-
-                            <span>
-                                Cổ tức tiền
-                            </span>
-
+                            <span>Cổ tức tiền</span>
                             <b>
                                 ${money(
-                                    item.cashDividend
+                                    p.cashDividend
                                 )}
                             </b>
-
                         </div>
 
-
                         <div class="kv">
-
-                            <span>
-                                CP từ quyền
-                            </span>
-
+                            <span>CP từ quyền</span>
                             <b>
                                 ${number(
-                                    item.stockDividend
+                                    p.stockDividend
                                 )}
                             </b>
-
                         </div>
 
                     </div>
@@ -2170,25 +1946,19 @@ function renderPortfolio() {
 
 
 /* ==================================================
-   TRANSACTION TABLE
+   TABLE
 ================================================== */
 
 function transactionTable(
     transactions
 ) {
 
-    if (
-        transactions.length === 0
-    ) {
+    if (!transactions.length) {
 
         return `
 
-            <div class="card">
-
-                <div class="hint">
-                    Chưa có dữ liệu.
-                </div>
-
+            <div class="hint">
+                Chưa có dữ liệu.
             </div>
 
         `;
@@ -2210,116 +1980,118 @@ function transactionTable(
 
     return `
 
-        <table>
+        <div class="table-scroll">
 
-            <thead>
+            <table>
 
-                <tr>
+                <thead>
 
-                    <th>Ngày</th>
-                    <th>Loại</th>
-                    <th>Mã</th>
-                    <th>SL</th>
-                    <th>Giá</th>
-                    <th>Phí</th>
-                    <th>Tổng</th>
-                    <th>Nguồn</th>
-                    <th></th>
+                    <tr>
 
-                </tr>
+                        <th>Ngày</th>
+                        <th>Loại</th>
+                        <th>Mã</th>
+                        <th>SL</th>
+                        <th>Giá</th>
+                        <th>Phí</th>
+                        <th>Tổng</th>
+                        <th>Nguồn</th>
+                        <th></th>
 
-            </thead>
+                    </tr>
 
-            <tbody>
+                </thead>
 
-                ${sorted.map(
-                    transaction => `
+                <tbody>
 
-                        <tr>
+                    ${sorted.map(
+                        t => `
 
-                            <td>
-                                ${escapeHTML(
-                                    transaction.date
-                                )}
-                            </td>
+                            <tr>
 
-                            <td class="${
-                                transaction.type === "sell"
-                                    ? "red"
-                                    : "green"
-                            }">
+                                <td>
+                                    ${escapeHTML(
+                                        t.date
+                                    )}
+                                </td>
 
-                                ${
-                                    transaction.type === "buy"
-                                        ? "MUA"
-                                        : "BÁN"
-                                }
+                                <td class="${
+                                    t.type === "sell"
+                                        ? "red"
+                                        : "green"
+                                }">
 
-                            </td>
+                                    ${
+                                        t.type === "buy"
+                                            ? "MUA"
+                                            : "BÁN"
+                                    }
 
-                            <td>
-                                ${escapeHTML(
-                                    transaction.symbol
-                                )}
-                            </td>
+                                </td>
 
-                            <td>
-                                ${number(
-                                    transaction.qty
-                                )}
-                            </td>
+                                <td>
+                                    ${escapeHTML(
+                                        t.symbol
+                                    )}
+                                </td>
 
-                            <td>
-                                ${money(
-                                    transaction.price
-                                )}
-                            </td>
+                                <td>
+                                    ${number(
+                                        t.qty
+                                    )}
+                                </td>
 
-                            <td>
-                                ${money(
-                                    transaction.fee
-                                )}
-                            </td>
+                                <td>
+                                    ${money(
+                                        t.price
+                                    )}
+                                </td>
 
-                            <td>
-                                ${money(
-                                    transaction.total
-                                )}
-                            </td>
+                                <td>
+                                    ${money(
+                                        t.fee
+                                    )}
+                                </td>
 
-                            <td>
+                                <td>
+                                    ${money(
+                                        t.total
+                                    )}
+                                </td>
 
-                                ${
-                                    transaction.type === "buy"
-                                        ? (
-                                            transaction.source === "dividend"
-                                                ? "Ví cổ tức"
-                                                : "Tiền mặt"
-                                        )
-                                        : "—"
-                                }
+                                <td>
+                                    ${
+                                        t.type === "buy"
+                                            ? (
+                                                t.source === "dividend"
+                                                    ? "Ví cổ tức"
+                                                    : "Tiền mặt"
+                                            )
+                                            : "Tiền mặt"
+                                    }
+                                </td>
 
-                            </td>
+                                <td>
 
-                            <td>
+                                    <button
+                                        class="action"
+                                        onclick="deleteTransaction('${t.id}')"
+                                    >
+                                        Xóa
+                                    </button>
 
-                                <button
-                                    class="action"
-                                    onclick="deleteTransaction('${transaction.id}')"
-                                >
-                                    Xóa
-                                </button>
+                                </td>
 
-                            </td>
+                            </tr>
 
-                        </tr>
+                        `
+                    ).join("")}
 
-                    `
-                ).join("")}
+                </tbody>
 
-            </tbody>
+            </table>
 
-        </table>
+        </div>
 
     `;
 
@@ -2332,29 +2104,44 @@ function transactionTable(
 
 function renderTransactions() {
 
-    document.getElementById(
-        "transactions"
-    ).innerHTML =
-        transactionTable(
-            data.transactions
+    const all =
+        document.getElementById(
+            "transactions"
+        );
+
+    const recent =
+        document.getElementById(
+            "recent"
         );
 
 
-    document.getElementById(
-        "recent"
-    ).innerHTML =
-        transactionTable(
-            data.transactions
-                .slice()
-                .sort(
-                    (a, b) =>
-                        String(b.date)
-                            .localeCompare(
-                                String(a.date)
-                            )
-                )
-                .slice(0, 8)
-        );
+    if (all) {
+
+        all.innerHTML =
+            transactionTable(
+                data.transactions
+            );
+
+    }
+
+
+    if (recent) {
+
+        recent.innerHTML =
+            transactionTable(
+                data.transactions
+                    .slice()
+                    .sort(
+                        (a, b) =>
+                            String(b.date)
+                                .localeCompare(
+                                    String(a.date)
+                                )
+                    )
+                    .slice(0, 8)
+            );
+
+    }
 
 }
 
@@ -2371,6 +2158,10 @@ function renderDividends() {
         );
 
 
+    if (!element)
+        return;
+
+
     const dividends =
         data.dividends
             .slice()
@@ -2383,18 +2174,12 @@ function renderDividends() {
             );
 
 
-    if (
-        dividends.length === 0
-    ) {
+    if (!dividends.length) {
 
         element.innerHTML = `
 
-            <div class="card">
-
-                <div class="hint">
-                    Chưa có lịch sử cổ tức.
-                </div>
-
+            <div class="hint">
+                Chưa có lịch sử cổ tức.
             </div>
 
         `;
@@ -2406,116 +2191,107 @@ function renderDividends() {
 
     element.innerHTML = `
 
-        <table>
+        <div class="table-scroll">
 
-            <thead>
+            <table>
 
-                <tr>
+                <thead>
 
-                    <th>Ngày chốt</th>
-                    <th>Ngày nhận</th>
-                    <th>Mã</th>
-                    <th>Loại</th>
-                    <th>CP đủ ĐK</th>
-                    <th>Kết quả</th>
-                    <th></th>
+                    <tr>
 
-                </tr>
+                        <th>Ngày chốt</th>
+                        <th>Ngày nhận</th>
+                        <th>Mã</th>
+                        <th>Loại</th>
+                        <th>CP đủ ĐK</th>
+                        <th>Kết quả</th>
+                        <th></th>
 
-            </thead>
+                    </tr>
 
-            <tbody>
+                </thead>
 
-                ${dividends.map(
-                    dividend => {
+                <tbody>
 
-                        let result;
+                    ${dividends.map(
+                        d => {
+
+                            const result =
+                                d.type === "cash"
+                                    ? money(
+                                        d.cashTotal
+                                    )
+                                    :
+                                    `${number(
+                                        d.receivedQty
+                                    )} CP (${d.ratioBase}:${d.ratioNew})`;
 
 
-                        if (
-                            dividend.type === "cash"
-                        ) {
+                            return `
 
-                            result =
-                                money(
-                                    dividend.cashTotal
-                                );
+                                <tr>
 
-                        } else {
+                                    <td>
+                                        ${escapeHTML(
+                                            d.recordDate
+                                        )}
+                                    </td>
 
-                            result =
-                                `${number(
-                                    dividend.receivedQty
-                                )} CP (${dividend.ratioBase}:${dividend.ratioNew})`;
+                                    <td>
+                                        ${escapeHTML(
+                                            d.payDate
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${escapeHTML(
+                                            d.symbol
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${
+                                            d.type === "cash"
+                                                ? "Tiền mặt"
+                                                : d.type === "stock"
+                                                    ? "Cổ tức CP"
+                                                    : "CP thưởng"
+                                        }
+                                    </td>
+
+                                    <td>
+                                        ${number(
+                                            d.eligible
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        ${result}
+                                    </td>
+
+                                    <td>
+
+                                        <button
+                                            class="action"
+                                            onclick="deleteDividend('${d.id}')"
+                                        >
+                                            Xóa
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                            `;
 
                         }
+                    ).join("")}
 
+                </tbody>
 
-                        return `
+            </table>
 
-                            <tr>
-
-                                <td>
-                                    ${escapeHTML(
-                                        dividend.recordDate
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        dividend.payDate
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        dividend.symbol
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    ${
-                                        dividend.type === "cash"
-                                            ? "Tiền mặt"
-                                            : dividend.type === "stock"
-                                                ? "Cổ tức CP"
-                                                : "CP thưởng"
-                                    }
-
-                                </td>
-
-                                <td>
-                                    ${number(
-                                        dividend.eligible
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${result}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="action"
-                                        onclick="deleteDividend('${dividend.id}')"
-                                    >
-                                        Xóa
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `;
-
-                    }
-                ).join("")}
-
-            </tbody>
-
-        </table>
+        </div>
 
     `;
 
@@ -2534,9 +2310,8 @@ function renderSettings() {
         );
 
 
-    if (!form) {
+    if (!form)
         return;
-    }
 
 
     form.fee.value =
@@ -2555,7 +2330,7 @@ function renderSettings() {
 
 
 /* ==================================================
-   DIVIDEND FORM FIELDS
+   DIVIDEND FIELDS
 ================================================== */
 
 function toggleDividendFields() {
@@ -2577,30 +2352,20 @@ function toggleDividendFields() {
         );
 
 
-    if (!cash || !stock) {
+    if (!cash || !stock)
         return;
-    }
 
 
-    if (
+    cash.style.display =
         type === "cash"
-    ) {
+            ? "block"
+            : "none";
 
-        cash.style.display =
-            "block";
 
-        stock.style.display =
-            "none";
-
-    } else {
-
-        cash.style.display =
-            "none";
-
-        stock.style.display =
-            "block";
-
-    }
+    stock.style.display =
+        type === "cash"
+            ? "none"
+            : "block";
 
 }
 
@@ -2617,6 +2382,10 @@ function resetTradeForm() {
         );
 
 
+    if (!form)
+        return;
+
+
     form.reset();
 
     form.date.value =
@@ -2628,47 +2397,8 @@ function resetTradeForm() {
     form.source.value =
         "cash";
 
-}
-
-
-/* ==================================================
-   OPEN TRADE
-================================================== */
-
-function openTrade(type) {
-
-    const tab =
-        document.querySelector(
-            '[data-tab="trade"]'
-        );
-
-
-    if (tab) {
-        tab.click();
-    }
-
-
-    const form =
-        document.getElementById(
-            "tradeForm"
-        );
-
-
-    if (form) {
-
-        form.type.value =
-            type;
-
-        if (
-            type === "sell"
-        ) {
-
-            form.source.value =
-                "cash";
-
-        }
-
-    }
+    form.source.disabled =
+        false;
 
 }
 
@@ -2681,7 +2411,7 @@ function backupJSON() {
 
     const backup = {
 
-        version: 2,
+        version: 3,
 
         exportedAt:
             new Date()
@@ -2736,15 +2466,13 @@ function backupJSON() {
     link.remove();
 
 
-    setTimeout(
-        () =>
-            URL.revokeObjectURL(url),
-        1000
+    URL.revokeObjectURL(
+        url
     );
 
 
     toast(
-        "Đã xuất backup JSON."
+        "Đã xuất backup."
     );
 
 }
@@ -2764,14 +2492,12 @@ async function restoreJSON(file) {
         const backup =
             JSON.parse(text);
 
-
         const restored =
             backup.data ||
             backup;
 
 
         if (
-            !restored ||
             !Array.isArray(
                 restored.deposits
             ) ||
@@ -2797,15 +2523,11 @@ async function restoreJSON(file) {
             );
 
 
-        for (
-            const symbol of getSymbols()
-        ) {
-
-            getHoldingLots(
-                symbol
+        getSymbols()
+            .forEach(
+                s =>
+                    getHoldingLots(s)
             );
-
-        }
 
 
         saveData();
@@ -2834,13 +2556,10 @@ function resetAll() {
 
     if (
         !confirm(
-            "Xóa TOÀN BỘ dữ liệu?\n\nHãy backup trước nếu cần."
+            "Xóa TOÀN BỘ dữ liệu?"
         )
-    ) {
-
+    )
         return;
-
-    }
 
 
     data =
@@ -2852,83 +2571,138 @@ function resetAll() {
     saveData();
 
     toast(
-        "Đã xóa toàn bộ dữ liệu."
+        "Đã xóa dữ liệu."
     );
 
 }
 
 
 /* ==================================================
-   PROJECTION HELPERS
+   ==================================================
+   NEW PROJECTION ENGINE
+   ==================================================
 ================================================== */
 
-function projectionMoney(value) {
 
-    return new Intl.NumberFormat(
-        "vi-VN",
-        {
-            maximumFractionDigits: 0
-        }
-    ).format(
-        Math.round(
-            Number(value) || 0
-        )
-    ) + " đ";
+/*
+====================================================
+NGUYÊN TẮC:
 
+sourceShares
+    =
+CP nguồn ban đầu.
+
+reinvestLots
+    =
+các lô CP mua bằng:
+
+    cổ tức tái đầu tư
+    +
+    tiền nạp thêm.
+
+Mỗi lô có:
+
+{
+    yearBought,
+    shares,
+    price
 }
 
+Khi tính cổ tức:
 
-function projectionNumber(value) {
+sourceDividend
+    =
+sourceShares × dividend.
 
-    return new Intl.NumberFormat(
-        "vi-VN",
-        {
-            maximumFractionDigits: 0
-        }
-    ).format(
-        Math.round(
-            Number(value) || 0
-        )
-    );
+reinvestDividend
+    =
+tổng từng lô tái đầu tư
+× dividend.
 
-}
+Không lấy:
+totalShares × dividend
 
+=> tránh tính cổ tức cho CP vừa mua
+trước khi CP đó thực sự tồn tại.
+====================================================
+*/
 
-/* ==================================================
-   PROJECTION ENGINE
-==================================================
-
-   QUAN TRỌNG:
-
-   - Không lưu vào danh mục thật
-   - Không tạo transaction
-   - Tiền dư chuyển sang năm sau
-   - Lãi tiền mặt tính theo ngày
-   - Mua theo lô 100 CP
-================================================== */
 
 function calculateProjectionScenario(
     options
 ) {
 
-    let shares =
+    const totalYears =
+        Math.max(
+            1,
+            Math.floor(
+                Number(
+                    options.years
+                ) || 1
+            )
+        );
+
+
+    const contributionYears =
         Math.max(
             0,
-            Number(options.shares) || 0
+            Math.min(
+                totalYears,
+                Number(
+                    options.contributionYears
+                ) || 0
+            )
+        );
+
+
+    const reinvestYears =
+        Math.max(
+            0,
+            Math.min(
+                totalYears,
+                Number(
+                    options.reinvestYears
+                ) || 0
+            )
+        );
+
+
+    const holdingYears =
+        Math.max(
+            1,
+            Math.min(
+                totalYears,
+                Number(
+                    options.holdingYears
+                ) || totalYears
+            )
+        );
+
+
+    const startShares =
+        Math.max(
+            0,
+            Number(
+                options.shares
+            ) || 0
         );
 
 
     const price =
         Math.max(
             0,
-            Number(options.price) || 0
+            Number(
+                options.price
+            ) || 0
         );
 
 
     const dividend =
         Math.max(
             0,
-            Number(options.dividend) || 0
+            Number(
+                options.dividend
+            ) || 0
         );
 
 
@@ -2947,15 +2721,17 @@ function calculateProjectionScenario(
     const monthlyMoney =
         Math.max(
             0,
-            Number(options.monthlyMoney) || 0
+            Number(
+                options.monthlyMoney
+            ) || 0
         );
 
 
     const reinvestPercent =
-        Math.min(
-            100,
-            Math.max(
-                0,
+        Math.max(
+            0,
+            Math.min(
+                100,
                 Number(
                     options.reinvestPercent
                 ) || 0
@@ -2966,38 +2742,46 @@ function calculateProjectionScenario(
     const cashInterest =
         Math.max(
             0,
-            Number(options.cashInterest) || 0
+            Number(
+                options.cashInterest
+            ) || 0
         );
 
-
-    const years =
-        Math.max(
-            1,
-            Math.floor(
-                Number(options.years) || 1
-            )
-        );
-
-
-    /*
-       Tiền mặt ban đầu.
-
-       Không có mã tái đầu tư:
-       vẫn tính được tiền dư.
-    */
 
     let cash =
         Math.max(
             0,
-            Number(options.initialCash) || 0
+            Number(
+                options.initialCash
+            ) || 0
         );
 
+
+    /*
+       CP nguồn không bao giờ
+       bị cộng thêm CP tái đầu tư.
+    */
+
+    const sourceShares =
+        startShares;
+
+
+    /*
+       Các lô CP tái đầu tư.
+    */
+
+    const reinvestLots = [];
+
+
+    let totalSourceDividend = 0;
+
+    let totalReinvestDividend = 0;
 
     let totalDividend = 0;
 
     let totalContribution = 0;
 
-    let totalReinvest = 0;
+    let totalReinvestMoney = 0;
 
     let totalNewShares = 0;
 
@@ -3009,16 +2793,14 @@ function calculateProjectionScenario(
 
     for (
         let year = 1;
-        year <= years;
+        year <= totalYears;
         year++
     ) {
 
-        const startShares =
-            shares;
-
-
         /*
-           Giá cổ phiếu năm đó
+        ============================================
+        GIÁ
+        ============================================
         */
 
         const currentPrice =
@@ -3031,7 +2813,9 @@ function calculateProjectionScenario(
 
 
         /*
-           Cổ tức/CP năm đó
+        ============================================
+        CỔ TỨC / CP
+        ============================================
         */
 
         const dividendPerShare =
@@ -3044,179 +2828,216 @@ function calculateProjectionScenario(
 
 
         /*
-           Cổ tức nhận trong năm
+        ============================================
+        CP NGUỒN
+        ============================================
         */
 
-        const dividendMoney =
-            startShares *
+        const sourceDividend =
+            sourceShares *
             dividendPerShare;
 
 
         /*
-           Tiền nạp trong năm
+        ============================================
+        CP TÁI ĐẦU TƯ
+        ============================================
+
+        Chỉ những lô đã tồn tại từ
+        trước năm hiện tại mới nhận
+        cổ tức của năm hiện tại.
+
+        CP mua trong năm hiện tại
+        KHÔNG được tính cổ tức
+        của cả năm.
         */
 
-        const contribution =
-            monthlyMoney *
-            12;
+        let reinvestDividend = 0;
+
+        let reinvestSharesStart = 0;
+
+
+        reinvestLots.forEach(
+            lot => {
+
+                if (
+                    lot.yearBought <
+                    year
+                ) {
+
+                    reinvestSharesStart +=
+                        lot.shares;
+
+                    reinvestDividend +=
+                        lot.shares *
+                        dividendPerShare;
+
+                }
+
+            }
+        );
 
 
         /*
-           Thời gian giữa các lần
-           phát sinh tiền.
-
-           Mô phỏng đơn giản:
-           tiền có trong năm được
-           hưởng lãi trung bình khoảng
-           nửa năm.
-
-           Nhưng để tính theo ngày,
-           ta mô phỏng dòng tiền tháng.
+        ============================================
+        TỔNG CỔ TỨC
+        ============================================
         */
 
-        let yearlyInterest = 0;
+        const yearlyDividend =
+            sourceDividend +
+            reinvestDividend;
 
 
         /*
-           Tiền đầu năm
+        ============================================
+        TIỀN NẠP THÊM
+        ============================================
         */
 
-        let workingCash =
-            cash;
+        let contribution = 0;
 
 
-        /*
-           Lãi trên tiền đầu năm
-           trong 365 ngày.
-        */
-
-        yearlyInterest +=
-            workingCash *
-            cashInterest /
-            100 /
-            365 *
-            365;
-
-
-        /*
-           Tiền nạp từng tháng.
-        */
-
-        for (
-            let month = 1;
-            month <= 12;
-            month++
+        if (
+            year <= contributionYears
         ) {
 
-            const monthlyContribution =
-                monthlyMoney;
-
-
-            /*
-               Mỗi khoản nạp được
-               hưởng lãi số ngày còn lại
-               của năm.
-
-               Tháng 1 ~ 11 tháng
-               Tháng 12 ~ 0 tháng.
-            */
-
-            const daysRemaining =
-                Math.max(
-                    0,
-                    Math.round(
-                        365 *
-                        (
-                            12 - month
-                        ) /
-                        12
-                    )
-                );
-
-
-            yearlyInterest +=
-                monthlyContribution *
-                cashInterest /
-                100 /
-                365 *
-                daysRemaining;
+            contribution =
+                monthlyMoney *
+                12;
 
         }
 
 
         /*
-           Cộng lãi vào tiền mặt.
+        ============================================
+        LÃI TIỀN MẶT
+        ============================================
+
+        Tính theo tháng.
+
+        Tiền đầu năm có 12 tháng.
+
+        Tiền nạp tháng 1 có khoảng
+        11 tháng.
+
+        Tiền nạp tháng 12 có 0 tháng.
+        */
+
+        let yearlyInterest = 0;
+
+
+        yearlyInterest +=
+            cash *
+            cashInterest /
+            100;
+
+
+        if (
+            contribution > 0
+        ) {
+
+            for (
+                let month = 1;
+                month <= 12;
+                month++
+            ) {
+
+                const monthly =
+                    monthlyMoney;
+
+
+                const monthsRemaining =
+                    12 - month;
+
+
+                yearlyInterest +=
+                    monthly *
+                    cashInterest /
+                    100 *
+                    monthsRemaining /
+                    12;
+
+            }
+
+        }
+
+
+        /*
+        ============================================
+        CỘNG TIỀN
+        ============================================
         */
 
         cash +=
             yearlyInterest;
-
 
         totalInterest +=
             yearlyInterest;
 
 
-        /*
-           Cộng cổ tức.
-        */
-
-        cash +=
-            dividendMoney;
-
-
-        totalDividend +=
-            dividendMoney;
-
-
-        /*
-           Cộng tiền nạp.
-        */
-
         cash +=
             contribution;
-
 
         totalContribution +=
             contribution;
 
 
+        cash +=
+            yearlyDividend;
+
+
+        totalDividend +=
+            yearlyDividend;
+
+        totalSourceDividend +=
+            sourceDividend;
+
+        totalReinvestDividend +=
+            reinvestDividend;
+
+
         /*
-           Phần được phép tái đầu tư.
+        ============================================
+        TIỀN ĐƯỢC PHÉP TÁI ĐẦU TƯ
+        ============================================
         */
-
-        const availableForReinvest =
-            cash *
-            reinvestPercent /
-            100;
-
-
-        /*
-           Nếu không có mã nhận:
-           không mua CP,
-           toàn bộ vẫn nằm trong tiền mặt.
-        */
-
-        let buyShares = 0;
 
         let purchaseMoney = 0;
 
+        let buyShares = 0;
+
+
+        const canReinvest =
+            year <= reinvestYears;
+
 
         if (
-            options.target &&
-            options.target.trim() !== "" &&
+            canReinvest &&
             currentPrice > 0
         ) {
 
-            const possible =
-                Math.floor(
-                    availableForReinvest /
-                    currentPrice
-                );
+            /*
+               Tỷ lệ tiền được sử dụng
+               để tái đầu tư.
+            */
+
+            const available =
+                cash *
+                reinvestPercent /
+                100;
 
 
             /*
                Chỉ mua lô 100 CP.
             */
+
+            const possible =
+                Math.floor(
+                    available /
+                    currentPrice
+                );
+
 
             buyShares =
                 Math.floor(
@@ -3230,43 +3051,129 @@ function calculateProjectionScenario(
                 currentPrice;
 
 
+            /*
+               Tiền mua CP được trừ.
+
+               Tiền còn dư giữ lại.
+            */
+
             cash -=
                 purchaseMoney;
 
 
-            shares +=
-                buyShares;
+            /*
+               CP mới được đưa vào
+               reinvestLots.
+
+               Nhưng yearBought = year.
+
+               Do đó KHÔNG nhận cổ tức
+               của chính năm vừa mua.
+            */
+
+            if (
+                buyShares > 0
+            ) {
+
+                reinvestLots.push({
+
+                    yearBought:
+                        year,
+
+                    shares:
+                        buyShares,
+
+                    price:
+                        currentPrice
+
+                });
+
+            }
 
 
             totalNewShares +=
                 buyShares;
 
-
-            totalReinvest +=
+            totalReinvestMoney +=
                 purchaseMoney;
 
         }
 
 
         /*
-           Nếu chỉ tái đầu tư một phần:
-           phần còn lại vẫn là tiền mặt.
+        ============================================
+        SỐ CP TÁI ĐẦU TƯ CUỐI NĂM
+        ============================================
         */
 
-        const endValue =
-            shares *
+        const reinvestSharesEnd =
+            reinvestLots.reduce(
+                (sum, lot) =>
+                    sum + lot.shares,
+                0
+            );
+
+
+        /*
+        ============================================
+        TỔNG CP
+        ============================================
+        */
+
+        const totalSharesEnd =
+            sourceShares +
+            reinvestSharesEnd;
+
+
+        /*
+        ============================================
+        GIÁ TRỊ
+        ============================================
+        */
+
+        const stockValue =
+            totalSharesEnd *
             currentPrice;
+
+
+        const sourceValue =
+            sourceShares *
+            currentPrice;
+
+
+        const reinvestValue =
+            reinvestSharesEnd *
+            currentPrice;
+
+
+        const totalValue =
+            stockValue +
+            cash;
+
+
+        /*
+        ============================================
+        THỜI GIAN NẮM GIỮ
+        ============================================
+        */
+
+        const holdingActive =
+            year <= holdingYears;
 
 
         rows.push({
 
             year,
 
-            startShares,
+            sourceShares,
 
-            dividendPerShare,
+            sourceDividend,
 
-            dividendMoney,
+            reinvestSharesStart,
+
+            reinvestDividend,
+
+            yearlyDividend,
 
             contribution,
 
@@ -3279,51 +3186,79 @@ function calculateProjectionScenario(
 
             buyShares,
 
-            endShares:
-                shares,
+            reinvestSharesEnd,
+
+            totalSharesEnd,
+
+            sourceValue,
+
+            reinvestValue,
+
+            stockValue,
 
             cash,
 
-            endValue,
+            totalValue,
 
-            totalValue:
-                endValue + cash
+            holdingActive
 
         });
 
     }
 
 
+    const finalRow =
+        rows.length
+            ? rows[rows.length - 1]
+            : null;
+
+
     return {
 
         rows,
 
+        sourceShares,
+
         finalShares:
-            shares,
+            finalRow
+                ? finalRow.totalSharesEnd
+                : sourceShares,
+
+        finalSourceShares:
+            sourceShares,
+
+        finalReinvestShares:
+            finalRow
+                ? finalRow.reinvestSharesEnd
+                : 0,
+
+        totalSourceDividend,
+
+        totalReinvestDividend,
 
         totalDividend,
 
         totalContribution,
 
-        totalReinvest,
+        totalReinvestMoney,
 
         totalNewShares,
 
         totalInterest,
 
         finalCash:
-            cash,
+            finalRow
+                ? finalRow.cash
+                : cash,
 
         finalStockValue:
-            rows.length
-                ? rows[rows.length - 1]
-                    .endValue
+            finalRow
+                ? finalRow.stockValue
                 : 0,
 
         finalTotalValue:
-            rows.length
-                ? rows[rows.length - 1]
-                    .totalValue
+            finalRow
+                ? finalRow.totalValue
                 : cash
 
     };
@@ -3369,22 +3304,6 @@ function runDividendProjection() {
         ) || 0;
 
 
-    const dividendGrowth =
-        Number(
-            document.getElementById(
-                "projectionDividendGrowth"
-            ).value
-        ) || 0;
-
-
-    const priceGrowth =
-        Number(
-            document.getElementById(
-                "projectionPriceGrowth"
-            ).value
-        ) || 0;
-
-
     const monthlyMoney =
         Number(
             document.getElementById(
@@ -3417,6 +3336,46 @@ function runDividendProjection() {
         ) || 1;
 
 
+    const contributionYears =
+        Number(
+            document.getElementById(
+                "projectionContributionYears"
+            ).value
+        ) || 0;
+
+
+    const reinvestYears =
+        Number(
+            document.getElementById(
+                "projectionReinvestYears"
+            ).value
+        ) || 0;
+
+
+    const holdingYears =
+        Number(
+            document.getElementById(
+                "projectionHoldingYears"
+            ).value
+        ) || years;
+
+
+    const dividendGrowth =
+        Number(
+            document.getElementById(
+                "projectionDividendGrowth"
+            ).value
+        ) || 0;
+
+
+    const priceGrowth =
+        Number(
+            document.getElementById(
+                "projectionPriceGrowth"
+            ).value
+        ) || 0;
+
+
     const weak =
         Number(
             document.getElementById(
@@ -3442,11 +3401,11 @@ function runDividendProjection() {
 
 
     if (
-        price <= 0
+        !source
     ) {
 
         alert(
-            "Giá cổ phiếu năm đầu phải lớn hơn 0."
+            "Hãy nhập mã cổ phiếu nguồn."
         );
 
         return;
@@ -3455,11 +3414,11 @@ function runDividendProjection() {
 
 
     if (
-        shares < 0
+        price <= 0
     ) {
 
         alert(
-            "Số CP không hợp lệ."
+            "Giá cổ phiếu phải lớn hơn 0."
         );
 
         return;
@@ -3468,114 +3427,94 @@ function runDividendProjection() {
 
 
     /*
-       Chạy 3 kịch bản.
+    ================================================
+    3 KỊCH BẢN
+    ================================================
     */
 
-    const scenarios = {
+    const baseOptions = {
 
-        weak:
-            calculateProjectionScenario({
+        shares,
 
-                shares,
+        price,
 
-                price,
+        dividendGrowth,
 
-                dividend:
-                    weak,
+        priceGrowth,
 
-                dividendGrowth,
+        monthlyMoney,
 
-                priceGrowth,
+        reinvestPercent,
 
-                monthlyMoney,
+        cashInterest,
 
-                reinvestPercent,
+        years,
 
-                cashInterest,
+        contributionYears,
 
-                years,
+        reinvestYears,
 
-                target
-
-            }),
-
-
-        medium:
-            calculateProjectionScenario({
-
-                shares,
-
-                price,
-
-                dividend:
-                    medium,
-
-                dividendGrowth,
-
-                priceGrowth,
-
-                monthlyMoney,
-
-                reinvestPercent,
-
-                cashInterest,
-
-                years,
-
-                target
-
-            }),
-
-
-        high:
-            calculateProjectionScenario({
-
-                shares,
-
-                price,
-
-                dividend:
-                    high,
-
-                dividendGrowth,
-
-                priceGrowth,
-
-                monthlyMoney,
-
-                reinvestPercent,
-
-                cashInterest,
-
-                years,
-
-                target
-
-            })
+        holdingYears
 
     };
 
 
-    /*
-       Hiển thị summary mặc định
-       theo kịch bản trung bình.
-    */
+    const weakResult =
+        calculateProjectionScenario({
+
+            ...baseOptions,
+
+            dividend:
+                weak
+
+        });
+
+
+    const mediumResult =
+        calculateProjectionScenario({
+
+            ...baseOptions,
+
+            dividend:
+                medium
+
+        });
+
+
+    const highResult =
+        calculateProjectionScenario({
+
+            ...baseOptions,
+
+            dividend:
+                high
+
+        });
+
 
     renderProjectionSummary(
-        scenarios.medium,
-        target
-    );
-
-
-    renderScenarioSummary(
-        scenarios,
+        mediumResult,
         source,
         target
     );
 
 
+    renderScenarioSummary({
+
+        weak:
+            weakResult,
+
+        medium:
+            mediumResult,
+
+        high:
+            highResult
+
+    });
+
+
     renderProjectionTable(
-        scenarios.medium,
+        mediumResult,
         source,
         target
     );
@@ -3584,154 +3523,138 @@ function runDividendProjection() {
 
 
 /* ==================================================
-   PROJECTION SUMMARY
+   SUMMARY
 ================================================== */
 
 function renderProjectionSummary(
     result,
+    source,
     target
 ) {
 
-    const summary =
+    const element =
         document.getElementById(
             "projectionSummary"
         );
 
 
-    summary.innerHTML = `
+    element.innerHTML = `
 
         <div class="projection-stat">
-
-            <span>
-                Mã nhận
-            </span>
-
+            <span>CP nguồn</span>
             <strong>
-                ${escapeHTML(
-                    target || "Giữ tiền mặt"
+                ${projectionNumber(
+                    result.finalSourceShares
                 )}
             </strong>
-
         </div>
 
+        <div class="projection-stat">
+            <span>CP tái đầu tư</span>
+            <strong>
+                ${projectionNumber(
+                    result.finalReinvestShares
+                )}
+            </strong>
+        </div>
 
         <div class="projection-stat">
-
-            <span>
-                CP cuối kỳ
-            </span>
-
+            <span>Tổng CP</span>
             <strong>
                 ${projectionNumber(
                     result.finalShares
                 )}
             </strong>
-
         </div>
 
+        <div class="projection-stat">
+            <span>Cổ tức CP nguồn</span>
+            <strong>
+                ${projectionMoney(
+                    result.totalSourceDividend
+                )}
+            </strong>
+        </div>
 
         <div class="projection-stat">
+            <span>Cổ tức CP tái đầu tư</span>
+            <strong>
+                ${projectionMoney(
+                    result.totalReinvestDividend
+                )}
+            </strong>
+        </div>
 
-            <span>
-                Cổ tức tích lũy
-            </span>
-
+        <div class="projection-stat">
+            <span>Tổng cổ tức</span>
             <strong>
                 ${projectionMoney(
                     result.totalDividend
                 )}
             </strong>
-
         </div>
 
-
         <div class="projection-stat">
-
-            <span>
-                Tổng tái đầu tư
-            </span>
-
-            <strong>
-                ${projectionMoney(
-                    result.totalReinvest
-                )}
-            </strong>
-
-        </div>
-
-
-        <div class="projection-stat">
-
-            <span>
-                CP mua thêm
-            </span>
-
-            <strong>
-                ${projectionNumber(
-                    result.totalNewShares
-                )}
-            </strong>
-
-        </div>
-
-
-        <div class="projection-stat">
-
-            <span>
-                Tiền nạp thêm
-            </span>
-
+            <span>Tiền nạp thêm</span>
             <strong>
                 ${projectionMoney(
                     result.totalContribution
                 )}
             </strong>
-
         </div>
 
+        <div class="projection-stat">
+            <span>Tiền tái đầu tư</span>
+            <strong>
+                ${projectionMoney(
+                    result.totalReinvestMoney
+                )}
+            </strong>
+        </div>
 
         <div class="projection-stat">
+            <span>CP mua thêm</span>
+            <strong>
+                ${projectionNumber(
+                    result.totalNewShares
+                )}
+            </strong>
+        </div>
 
-            <span>
-                Lãi tiền mặt
-            </span>
-
+        <div class="projection-stat">
+            <span>Lãi tiền mặt</span>
             <strong>
                 ${projectionMoney(
                     result.totalInterest
                 )}
             </strong>
-
         </div>
 
-
         <div class="projection-stat">
-
-            <span>
-                Tiền dư cuối kỳ
-            </span>
-
+            <span>Tiền dư cuối kỳ</span>
             <strong>
                 ${projectionMoney(
                     result.finalCash
                 )}
             </strong>
-
         </div>
 
+        <div class="projection-stat">
+            <span>Giá trị CP cuối kỳ</span>
+            <strong>
+                ${projectionMoney(
+                    result.finalStockValue
+                )}
+            </strong>
+        </div>
 
         <div class="projection-stat">
-
-            <span>
-                Tổng giá trị cuối kỳ
-            </span>
-
+            <span>Tổng tài sản</span>
             <strong>
                 ${projectionMoney(
                     result.finalTotalValue
                 )}
             </strong>
-
         </div>
 
     `;
@@ -3740,13 +3663,11 @@ function renderProjectionSummary(
 
 
 /* ==================================================
-   SCENARIO SUMMARY
+   SCENARIOS
 ================================================== */
 
 function renderScenarioSummary(
-    scenarios,
-    source,
-    target
+    scenarios
 ) {
 
     const element =
@@ -3759,24 +3680,54 @@ function renderScenarioSummary(
 
         <div class="scenario-result">
 
-            <h3>
-                🔴 Cổ tức yếu
-            </h3>
+            <h3>🔴 Cổ tức yếu</h3>
 
             <p>
-                Cổ tức tích lũy:
+                CP nguồn:
                 <b>
-                    ${projectionMoney(
-                        scenarios.weak.totalDividend
+                    ${projectionNumber(
+                        scenarios.weak
+                            .finalSourceShares
                     )}
                 </b>
             </p>
 
             <p>
-                CP cuối kỳ:
+                CP tái đầu tư:
                 <b>
                     ${projectionNumber(
-                        scenarios.weak.finalShares
+                        scenarios.weak
+                            .finalReinvestShares
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP nguồn:
+                <b>
+                    ${projectionMoney(
+                        scenarios.weak
+                            .totalSourceDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP tái đầu tư:
+                <b>
+                    ${projectionMoney(
+                        scenarios.weak
+                            .totalReinvestDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Tổng cổ tức:
+                <b>
+                    ${projectionMoney(
+                        scenarios.weak
+                            .totalDividend
                     )}
                 </b>
             </p>
@@ -3785,16 +3736,18 @@ function renderScenarioSummary(
                 Tiền dư:
                 <b>
                     ${projectionMoney(
-                        scenarios.weak.finalCash
+                        scenarios.weak
+                            .finalCash
                     )}
                 </b>
             </p>
 
             <p>
-                Tổng giá trị:
+                Tổng tài sản:
                 <b>
                     ${projectionMoney(
-                        scenarios.weak.finalTotalValue
+                        scenarios.weak
+                            .finalTotalValue
                     )}
                 </b>
             </p>
@@ -3804,24 +3757,54 @@ function renderScenarioSummary(
 
         <div class="scenario-result">
 
-            <h3>
-                🟡 Cổ tức trung bình
-            </h3>
+            <h3>🟡 Cổ tức trung bình</h3>
 
             <p>
-                Cổ tức tích lũy:
+                CP nguồn:
                 <b>
-                    ${projectionMoney(
-                        scenarios.medium.totalDividend
+                    ${projectionNumber(
+                        scenarios.medium
+                            .finalSourceShares
                     )}
                 </b>
             </p>
 
             <p>
-                CP cuối kỳ:
+                CP tái đầu tư:
                 <b>
                     ${projectionNumber(
-                        scenarios.medium.finalShares
+                        scenarios.medium
+                            .finalReinvestShares
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP nguồn:
+                <b>
+                    ${projectionMoney(
+                        scenarios.medium
+                            .totalSourceDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP tái đầu tư:
+                <b>
+                    ${projectionMoney(
+                        scenarios.medium
+                            .totalReinvestDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Tổng cổ tức:
+                <b>
+                    ${projectionMoney(
+                        scenarios.medium
+                            .totalDividend
                     )}
                 </b>
             </p>
@@ -3830,16 +3813,18 @@ function renderScenarioSummary(
                 Tiền dư:
                 <b>
                     ${projectionMoney(
-                        scenarios.medium.finalCash
+                        scenarios.medium
+                            .finalCash
                     )}
                 </b>
             </p>
 
             <p>
-                Tổng giá trị:
+                Tổng tài sản:
                 <b>
                     ${projectionMoney(
-                        scenarios.medium.finalTotalValue
+                        scenarios.medium
+                            .finalTotalValue
                     )}
                 </b>
             </p>
@@ -3849,24 +3834,54 @@ function renderScenarioSummary(
 
         <div class="scenario-result">
 
-            <h3>
-                🟢 Cổ tức cao
-            </h3>
+            <h3>🟢 Cổ tức cao</h3>
 
             <p>
-                Cổ tức tích lũy:
+                CP nguồn:
                 <b>
-                    ${projectionMoney(
-                        scenarios.high.totalDividend
+                    ${projectionNumber(
+                        scenarios.high
+                            .finalSourceShares
                     )}
                 </b>
             </p>
 
             <p>
-                CP cuối kỳ:
+                CP tái đầu tư:
                 <b>
                     ${projectionNumber(
-                        scenarios.high.finalShares
+                        scenarios.high
+                            .finalReinvestShares
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP nguồn:
+                <b>
+                    ${projectionMoney(
+                        scenarios.high
+                            .totalSourceDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Cổ tức CP tái đầu tư:
+                <b>
+                    ${projectionMoney(
+                        scenarios.high
+                            .totalReinvestDividend
+                    )}
+                </b>
+            </p>
+
+            <p>
+                Tổng cổ tức:
+                <b>
+                    ${projectionMoney(
+                        scenarios.high
+                            .totalDividend
                     )}
                 </b>
             </p>
@@ -3875,16 +3890,18 @@ function renderScenarioSummary(
                 Tiền dư:
                 <b>
                     ${projectionMoney(
-                        scenarios.high.finalCash
+                        scenarios.high
+                            .finalCash
                     )}
                 </b>
             </p>
 
             <p>
-                Tổng giá trị:
+                Tổng tài sản:
                 <b>
                     ${projectionMoney(
-                        scenarios.high.finalTotalValue
+                        scenarios.high
+                            .finalTotalValue
                     )}
                 </b>
             </p>
@@ -3922,11 +3939,15 @@ function renderProjectionTable(
 
                     <th>Năm</th>
 
-                    <th>CP đầu năm</th>
+                    <th>CP nguồn</th>
 
-                    <th>Cổ tức/CP</th>
+                    <th>Cổ tức nguồn</th>
 
-                    <th>Cổ tức nhận</th>
+                    <th>CP TĐT đầu năm</th>
+
+                    <th>Cổ tức CP TĐT</th>
+
+                    <th>Tổng cổ tức</th>
 
                     <th>Tiền nạp</th>
 
@@ -3934,22 +3955,23 @@ function renderProjectionTable(
 
                     <th>Giá CP</th>
 
-                    <th>Tiền tái đầu tư</th>
+                    <th>Tiền mua CP</th>
 
                     <th>CP mua</th>
 
-                    <th>CP cuối năm</th>
+                    <th>CP TĐT cuối năm</th>
+
+                    <th>Tổng CP</th>
 
                     <th>Tiền dư</th>
 
                     <th>Giá trị CP</th>
 
-                    <th>Tổng giá trị</th>
+                    <th>Tổng tài sản</th>
 
                 </tr>
 
             </thead>
-
 
             <tbody>
 
@@ -3964,19 +3986,31 @@ function renderProjectionTable(
 
                             <td>
                                 ${projectionNumber(
-                                    row.startShares
+                                    row.sourceShares
                                 )}
                             </td>
 
                             <td>
                                 ${projectionMoney(
-                                    row.dividendPerShare
+                                    row.sourceDividend
+                                )}
+                            </td>
+
+                            <td>
+                                ${projectionNumber(
+                                    row.reinvestSharesStart
                                 )}
                             </td>
 
                             <td>
                                 ${projectionMoney(
-                                    row.dividendMoney
+                                    row.reinvestDividend
+                                )}
+                            </td>
+
+                            <td>
+                                ${projectionMoney(
+                                    row.yearlyDividend
                                 )}
                             </td>
 
@@ -4012,7 +4046,13 @@ function renderProjectionTable(
 
                             <td>
                                 ${projectionNumber(
-                                    row.endShares
+                                    row.reinvestSharesEnd
+                                )}
+                            </td>
+
+                            <td>
+                                ${projectionNumber(
+                                    row.totalSharesEnd
                                 )}
                             </td>
 
@@ -4024,7 +4064,7 @@ function renderProjectionTable(
 
                             <td>
                                 ${projectionMoney(
-                                    row.endValue
+                                    row.stockValue
                                 )}
                             </td>
 
@@ -4046,60 +4086,83 @@ function renderProjectionTable(
 
         <div class="projection-note">
 
-            <b>Quy tắc:</b>
-
-            ${escapeHTML(
-                source || "Không chọn mã nguồn"
-            )}
-
-            → 
-
-            ${escapeHTML(
-                target || "Không tái đầu tư CP"
-            )}
+            <b>Logic dự phóng:</b>
 
             <br><br>
 
-            Cổ tức được tính theo số CP
-            đầu năm.
+            ${escapeHTML(
+                source
+            )}
 
-            Tiền nạp được cộng thêm
-            ${number(
-                Number(
-                    document.getElementById(
-                        "projectionMonthlyMoney"
-                    ).value
-                ) || 0
-            )} đ/tháng.
+            là nguồn cổ phiếu ban đầu.
+
+            <br>
+
+            ${escapeHTML(
+                target || "Mã tái đầu tư"
+            )}
+
+            là nơi mua cổ phiếu bằng
+            cổ tức + tiền nạp thêm.
 
             <br><br>
-
-            Tiền mặt được tính lãi
-            theo lãi suất:
 
             <b>
-                ${Number(
-                    document.getElementById(
-                        "projectionCashInterest"
-                    ).value
-                ) || 0}%/năm
+                Cổ tức nguồn
             </b>
 
-            và tính theo số ngày.
+            =
+            CP nguồn × cổ tức/CP.
+
+            <br><br>
+
+            <b>
+                Cổ tức CP tái đầu tư
+            </b>
+
+            chỉ tính trên những CP
+            đã được mua từ các năm trước.
+
+            CP vừa mua trong năm
+            không nhận cổ tức của cả năm đó.
+
+            <br><br>
+
+            Tiền nạp thêm chỉ phát sinh
+            trong:
+
+            <b>
+                ${document.getElementById(
+                    "projectionContributionYears"
+                ).value || 0}
+                năm đầu.
+            </b>
+
+            <br><br>
+
+            Tái đầu tư cổ tức chỉ hoạt động
+            trong:
+
+            <b>
+                ${document.getElementById(
+                    "projectionReinvestYears"
+                ).value || 0}
+                năm.
+            </b>
 
             <br><br>
 
             Chỉ mua theo
             <b>lô 100 CP</b>.
 
-            Tiền chưa đủ mua 100 CP
-            được giữ lại và tiếp tục
-            sinh lãi ở năm sau.
+            Phần tiền không đủ mua lô 100
+            được giữ lại làm tiền mặt
+            và tiếp tục sinh lãi.
 
             <br><br>
 
-            Dự phóng không tạo giao dịch
-            thật và không lưu vào danh mục.
+            Dự phóng hoàn toàn độc lập
+            với danh mục thật.
 
         </div>
 
@@ -4124,7 +4187,9 @@ function initTabs() {
                     () => {
 
                         document
-                            .querySelectorAll(".tab")
+                            .querySelectorAll(
+                                ".tab"
+                            )
                             .forEach(
                                 item =>
                                     item.classList
@@ -4182,13 +4247,15 @@ function initTabs() {
 function initEvents() {
 
 
-    /* NẠP TIỀN */
-
-    document
-        .getElementById(
+    const depositForm =
+        document.getElementById(
             "depositForm"
-        )
-        .addEventListener(
+        );
+
+
+    if (depositForm) {
+
+        depositForm.addEventListener(
             "submit",
             event => {
 
@@ -4211,14 +4278,18 @@ function initEvents() {
             }
         );
 
+    }
 
-    /* GIAO DỊCH */
 
-    document
-        .getElementById(
+    const tradeForm =
+        document.getElementById(
             "tradeForm"
-        )
-        .addEventListener(
+        );
+
+
+    if (tradeForm) {
+
+        tradeForm.addEventListener(
             "submit",
             event => {
 
@@ -4242,13 +4313,54 @@ function initEvents() {
         );
 
 
-    /* CỔ TỨC */
+        const type =
+            tradeForm.querySelector(
+                '[name="type"]'
+            );
 
-    document
-        .getElementById(
+
+        const source =
+            tradeForm.querySelector(
+                '[name="source"]'
+            );
+
+
+        type.addEventListener(
+            "change",
+            () => {
+
+                if (
+                    type.value === "sell"
+                ) {
+
+                    source.value =
+                        "cash";
+
+                    source.disabled =
+                        true;
+
+                } else {
+
+                    source.disabled =
+                        false;
+
+                }
+
+            }
+        );
+
+    }
+
+
+    const dividendForm =
+        document.getElementById(
             "dividendForm"
-        )
-        .addEventListener(
+        );
+
+
+    if (dividendForm) {
+
+        dividendForm.addEventListener(
             "submit",
             event => {
 
@@ -4272,30 +4384,31 @@ function initEvents() {
         );
 
 
-    /* ĐỔI LOẠI CỔ TỨC */
+        dividendForm
+            .querySelector(
+                '[name="type"]'
+            )
+            .addEventListener(
+                "change",
+                toggleDividendFields
+            );
 
-    document
-        .querySelector(
-            '#dividendForm [name="type"]'
-        )
-        .addEventListener(
-            "change",
-            toggleDividendFields
+    }
+
+
+    const settingsForm =
+        document.getElementById(
+            "settingsForm"
         );
 
 
-    /* CÀI ĐẶT */
+    if (settingsForm) {
 
-    document
-        .getElementById(
-            "settingsForm"
-        )
-        .addEventListener(
+        settingsForm.addEventListener(
             "submit",
             event => {
 
                 event.preventDefault();
-
 
                 const form =
                     event.target;
@@ -4321,13 +4434,11 @@ function initEvents() {
 
                 data.settings
                     .custodyEnabled =
-                    form
-                        .custodyEnabled
+                    form.custodyEnabled
                         .checked;
 
 
                 saveData();
-
 
                 toast(
                     "Đã lưu cài đặt."
@@ -4336,14 +4447,18 @@ function initEvents() {
             }
         );
 
+    }
 
-    /* RESTORE */
 
-    document
-        .getElementById(
+    const restore =
+        document.getElementById(
             "restoreInput"
-        )
-        .addEventListener(
+        );
+
+
+    if (restore) {
+
+        restore.addEventListener(
             "change",
             async event => {
 
@@ -4351,14 +4466,13 @@ function initEvents() {
                     event.target.files[0];
 
 
-                if (!file) {
-                    return;
+                if (file) {
+
+                    await restoreJSON(
+                        file
+                    );
+
                 }
-
-
-                await restoreJSON(
-                    file
-                );
 
 
                 event.target.value =
@@ -4367,14 +4481,18 @@ function initEvents() {
             }
         );
 
+    }
 
-    /* DỰ PHÓNG */
 
-    document
-        .getElementById(
+    const projectionForm =
+        document.getElementById(
             "projectionForm"
-        )
-        .addEventListener(
+        );
+
+
+    if (projectionForm) {
+
+        projectionForm.addEventListener(
             "submit",
             event => {
 
@@ -4385,48 +4503,13 @@ function initEvents() {
             }
         );
 
-
-    /* MUA / BÁN */
-
-    document
-        .querySelector(
-            '#tradeForm [name="type"]'
-        )
-        .addEventListener(
-            "change",
-            event => {
-
-                const source =
-                    document.querySelector(
-                        '#tradeForm [name="source"]'
-                    );
-
-
-                if (
-                    event.target.value === "sell"
-                ) {
-
-                    source.value =
-                        "cash";
-
-                    source.disabled =
-                        true;
-
-                } else {
-
-                    source.disabled =
-                        false;
-
-                }
-
-            }
-        );
+    }
 
 }
 
 
 /* ==================================================
-   DEFAULT DATES
+   DATES
 ================================================== */
 
 function initDates() {
@@ -4439,7 +4522,9 @@ function initDates() {
 
         '#dividendForm [name="recordDate"]',
 
-        '#dividendForm [name="payDate"]'
+        '#dividendForm [name="payDate"]',
+
+        '#projectionStartDate'
 
     ];
 
@@ -4467,7 +4552,7 @@ function initDates() {
 
 
 /* ==================================================
-   RENDER ALL
+   START
 ================================================== */
 
 function renderAll() {
@@ -4484,10 +4569,6 @@ function renderAll() {
 
 }
 
-
-/* ==================================================
-   START APP
-================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
