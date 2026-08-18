@@ -572,7 +572,208 @@
         </div>
 
     </section>
+        </div>
 
+    </section>
+
+
+    <!-- ==============================
+     DỰ PHÓNG TÁI ĐẦU TƯ
+================================ -->
+
+<section id="projection" class="tab-panel">
+
+    <div class="section-head">
+        <h2>📈 Dự phóng tái đầu tư</h2>
+    </div>
+
+    <div class="projection-grid">
+
+        <!-- THÔNG SỐ -->
+        <div class="card">
+
+            <h3>⚙️ Thông số dự phóng</h3>
+
+            <div class="projection-form">
+
+                <label>
+                    Mã nguồn cổ tức
+                    <input
+                        id="projectionSource"
+                        type="text"
+                        placeholder="ADP + VEA">
+                </label>
+
+                <label>
+                    Mã nhận tái đầu tư
+                    <input
+                        id="projectionTarget"
+                        type="text"
+                        placeholder="SJD">
+                </label>
+
+                <label>
+                    Số CP hiện tại
+                    <input
+                        id="projectionShares"
+                        type="number"
+                        min="0"
+                        value="15000">
+                </label>
+
+                <label>
+                    Giá CP năm đầu
+                    <input
+                        id="projectionPrice"
+                        type="number"
+                        min="0"
+                        value="70000">
+                </label>
+
+                <label>
+                    Cổ tức / CP năm đầu
+                    <input
+                        id="projectionDividend"
+                        type="number"
+                        min="0"
+                        value="5000">
+                </label>
+
+                <label>
+                    Tăng trưởng cổ tức (%/năm)
+                    <input
+                        id="projectionDividendGrowth"
+                        type="number"
+                        value="5">
+                </label>
+
+                <label>
+                    Tăng trưởng giá CP (%/năm)
+                    <input
+                        id="projectionPriceGrowth"
+                        type="number"
+                        value="3">
+                </label>
+
+                <label>
+                    Tiền nạp thêm / tháng
+                    <input
+                        id="projectionMonthlyMoney"
+                        type="number"
+                        min="0"
+                        value="0">
+                </label>
+
+                <label>
+                    % cổ tức tái đầu tư
+                    <input
+                        id="projectionReinvest"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value="100">
+                </label>
+
+                <label>
+                    Số năm dự phóng
+                    <input
+                        id="projectionYears"
+                        type="number"
+                        min="1"
+                        max="50"
+                        value="10">
+                </label>
+
+                <button
+                    type="button"
+                    class="primary"
+                    onclick="runDividendProjection()">
+
+                    📊 Tính dự phóng
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- QUY TẮC -->
+        <div class="card">
+
+            <h3>📌 Quy tắc</h3>
+
+            <div class="projection-rules">
+
+                <div>
+                    <span>Lô mua</span>
+                    <strong>100 CP</strong>
+                </div>
+
+                <div>
+                    <span>CP lẻ</span>
+                    <strong>Không mua</strong>
+                </div>
+
+                <div>
+                    <span>Tiền dư</span>
+                    <strong>Giữ lại</strong>
+                </div>
+
+                <div>
+                    <span>Kỳ sau</span>
+                    <strong>Cộng tiền dư</strong>
+                </div>
+
+                <div>
+                    <span>Dữ liệu thật</span>
+                    <strong>Không thay đổi</strong>
+                </div>
+
+                <div>
+                    <span>Lưu dữ liệu</span>
+                    <strong>Không lưu</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- KẾT QUẢ TỔNG QUAN -->
+
+    <div
+        id="projectionSummary"
+        class="projection-summary">
+    </div>
+
+
+    <!-- BẢNG -->
+
+    <div class="card projection-result">
+
+        <h3>📊 Chi tiết từng năm</h3>
+
+        <div
+            id="projectionTable"
+            class="table-wrap">
+        </div>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<!-- ==============================
+     TOAST
+================================ -->
+
+<div id="toast"></div>
 </main>
 
 
