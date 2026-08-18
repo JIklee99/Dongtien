@@ -3347,3 +3347,637 @@ document
 ================================================== */
 
 renderAll();
+/* ==================================================
+   DỰ PHÓNG TÁI ĐẦU TƯ
+   - KHÔNG LƯU DỮ LIỆU
+   - KHÔNG ẢNH HƯỞNG DANH MỤC THẬT
+   - CHỈ MUA LÔ 100 CP
+   - TIỀN DƯ CHUYỂN SANG NĂM SAU
+================================================== */
+
+function projectionMoney(value) {
+
+    return new Intl.NumberFormat("vi-VN", {
+        maximumFractionDigits: 0
+    }).format(Math.round(value)) + " đ";
+
+}
+
+
+function projectionNumber(value) {
+
+    return new Intl.NumberFormat("vi-VN", {
+        maximumFractionDigits: 0
+    }).format(Math.round(value));
+
+}
+
+
+function runDividendProjection() {
+
+    /* ==========================
+       LẤY DỮ LIỆU NHẬP
+    ========================== */
+
+    const source =
+        document.getElementById(
+            "projectionSource"
+        ).value.trim();
+
+    const target =
+        document.getElementById(
+            "projectionTarget"
+        ).value.trim().toUpperCase();
+
+    let shares =
+        Number(
+            document.getElementById(
+                "projectionShares"
+            ).value
+        ) || 0;
+
+    let price =
+        Number(
+            document.getElementById(
+                "projectionPrice"
+            ).value
+        ) || 0;
+
+    const firstDividend =
+        Number(
+            document.getElementById(
+                "projectionDividend"
+            ).value
+        ) || 0;
+
+    const dividendGrowth =
+        Number(
+            document.getElementById(
+                "projectionDividendGrowth"
+            ).value
+        ) || 0;
+
+    const priceGrowth =
+        Number(
+            document.getElementById(
+                "projectionPriceGrowth"
+            ).value
+        ) || 0;
+
+    const monthlyMoney =
+        Number(
+            document.getElementById(
+                "projectionMonthlyMoney"
+            ).value
+        ) || 0;
+
+    let reinvestPercent =
+        Number(
+            document.getElementById(
+                "projectionReinvest"
+            ).value
+        );
+
+    const years =
+        Number(
+            document.getElementById(
+                "projectionYears"
+            ).value
+        ) || 1;
+
+
+    /* ==========================
+       KIỂM TRA
+    ========================== */
+
+    if (price <= 0) {
+
+        alert(
+            "Giá cổ phiếu phải lớn hơn 0."
+        );
+
+        return;
+
+    }
+
+
+    if (firstDividend < 0) {
+
+        alert(
+            "Cổ tức không được âm."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        reinvestPercent < 0
+    ) {
+
+        reinvestPercent = 0;
+
+    }
+
+
+    if (
+        reinvestPercent > 100
+    ) {
+
+        reinvestPercent = 100;
+
+    }
+
+
+    /* ==========================
+       BIẾN DỰ PHÓNG
+    ========================== */
+
+    let cashRemainder = 0;
+
+    let totalDividend = 0;
+
+    let totalReinvest = 0;
+
+    let totalNewShares = 0;
+
+    let totalContribution = 0;
+
+    const rows = [];
+
+
+    /* ==========================
+       TỪNG NĂM
+    ========================== */
+
+    for (
+        let year = 1;
+        year <= years;
+        year++
+    ) {
+
+        const startShares =
+            shares;
+
+
+        /* --------------------------
+           CỔ TỨC / CP
+        -------------------------- */
+
+        const dividendPerShare =
+            firstDividend *
+            Math.pow(
+                1 +
+                dividendGrowth / 100,
+                year - 1
+            );
+
+
+        /* --------------------------
+           CỔ TỨC NHẬN
+        -------------------------- */
+
+        const dividendMoney =
+            startShares *
+            dividendPerShare;
+
+
+        /* --------------------------
+           TIỀN NẠP TRONG NĂM
+        -------------------------- */
+
+        const contribution =
+            monthlyMoney * 12;
+
+
+        totalContribution +=
+            contribution;
+
+
+        /* --------------------------
+           TIỀN CÓ THỂ SỬ DỤNG
+        -------------------------- */
+
+        const availableMoney =
+            cashRemainder +
+            dividendMoney +
+            contribution;
+
+
+        /*
+           Phần tiền dùng tái đầu tư
+        */
+
+        const moneyForReinvest =
+            availableMoney *
+            reinvestPercent /
+            100;
+
+
+        /*
+           Phần không tái đầu tư
+        */
+
+        const moneyNotReinvest =
+            availableMoney -
+            moneyForReinvest;
+
+
+        /* --------------------------
+           GIÁ CỔ PHIẾU
+        -------------------------- */
+
+        const currentPrice =
+            price *
+            Math.pow(
+                1 +
+                priceGrowth / 100,
+                year - 1
+            );
+
+
+        /* --------------------------
+           TÍNH LÔ 100 CP
+        -------------------------- */
+
+        const possibleShares =
+            Math.floor(
+                moneyForReinvest /
+                currentPrice
+            );
+
+
+        const buyShares =
+            Math.floor(
+                possibleShares / 100
+            ) * 100;
+
+
+        /* --------------------------
+           TIỀN MUA
+        -------------------------- */
+
+        const purchaseMoney =
+            buyShares *
+            currentPrice;
+
+
+        /* --------------------------
+           TIỀN DƯ
+        --------------------------
+
+           QUAN TRỌNG:
+
+           Tiền chưa đủ mua 100 CP
+           KHÔNG mất.
+
+           Nó chuyển sang năm sau.
+        */
+
+        cashRemainder =
+            moneyNotReinvest +
+            (
+                moneyForReinvest -
+                purchaseMoney
+            );
+
+
+        /* --------------------------
+           CẬP NHẬT CP
+        -------------------------- */
+
+        shares +=
+            buyShares;
+
+
+        totalDividend +=
+            dividendMoney;
+
+
+        totalReinvest +=
+            purchaseMoney;
+
+
+        totalNewShares +=
+            buyShares;
+
+
+        /* --------------------------
+           GIÁ TRỊ CUỐI NĂM
+        -------------------------- */
+
+        const endValue =
+            shares *
+            currentPrice;
+
+
+        rows.push({
+
+            year,
+
+            startShares,
+
+            dividendPerShare,
+
+            dividendMoney,
+
+            contribution,
+
+            availableMoney,
+
+            currentPrice,
+
+            purchaseMoney,
+
+            buyShares,
+
+            cashRemainder,
+
+            endShares:
+                shares,
+
+            endValue
+
+        });
+
+    }
+
+
+    /* ==========================
+       HIỂN THỊ TỔNG QUAN
+    ========================== */
+
+    const summary =
+        document.getElementById(
+            "projectionSummary"
+        );
+
+
+    summary.innerHTML = `
+
+        <div class="projection-stat">
+
+            <span>
+                Mã nhận
+            </span>
+
+            <strong>
+                ${target || "-"}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                CP cuối kỳ
+            </span>
+
+            <strong>
+                ${projectionNumber(
+                    shares
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Cổ tức tích lũy
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    totalDividend
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Tổng tái đầu tư
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    totalReinvest
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                CP mua thêm
+            </span>
+
+            <strong>
+                ${projectionNumber(
+                    totalNewShares
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Tiền nạp thêm
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    totalContribution
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Tiền dư cuối kỳ
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    cashRemainder
+                )}
+            </strong>
+
+        </div>
+
+
+        <div class="projection-stat">
+
+            <span>
+                Giá trị cuối kỳ
+            </span>
+
+            <strong>
+                ${projectionMoney(
+                    rows[rows.length - 1]
+                        .endValue
+                )}
+            </strong>
+
+        </div>
+
+    `;
+
+
+    /* ==========================
+       BẢNG CHI TIẾT
+    ========================== */
+
+    const table =
+        document.getElementById(
+            "projectionTable"
+        );
+
+
+    table.innerHTML = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Năm</th>
+
+                    <th>CP đầu năm</th>
+
+                    <th>Cổ tức</th>
+
+                    <th>Tiền nạp</th>
+
+                    <th>Giá CP</th>
+
+                    <th>Tiền tái đầu tư</th>
+
+                    <th>CP mua</th>
+
+                    <th>CP cuối năm</th>
+
+                    <th>Tiền dư</th>
+
+                    <th>Giá trị</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                ${rows.map(row => `
+
+                    <tr>
+
+                        <td>
+                            ${row.year}
+                        </td>
+
+                        <td>
+                            ${projectionNumber(
+                                row.startShares
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionMoney(
+                                row.dividendMoney
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionMoney(
+                                row.contribution
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionMoney(
+                                row.currentPrice
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionMoney(
+                                row.purchaseMoney
+                            )}
+                        </td>
+
+                        <td class="projection-buy">
+                            +${projectionNumber(
+                                row.buyShares
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionNumber(
+                                row.endShares
+                            )}
+                        </td>
+
+                        <td class="projection-cash">
+                            ${projectionMoney(
+                                row.cashRemainder
+                            )}
+                        </td>
+
+                        <td>
+                            ${projectionMoney(
+                                row.endValue
+                            )}
+                        </td>
+
+                    </tr>
+
+                `).join("")}
+
+            </tbody>
+
+        </table>
+
+        <div class="projection-note">
+
+            <b>Quy tắc tính:</b>
+
+            ${source || "Mã nguồn cổ tức"}
+            → ${target || "mã nhận"}
+
+            <br><br>
+
+            Cổ tức + tiền nạp + tiền dư
+            được gom lại.
+
+            Chỉ mua cổ phiếu theo
+            <b>lô 100 CP</b>.
+
+            Tiền không đủ mua lô 100
+            được giữ lại và chuyển sang
+            năm tiếp theo.
+
+            <br><br>
+
+            Đây chỉ là dự phóng.
+            Không tạo giao dịch thật
+            và không lưu dữ liệu.
+
+        </div>
+
+    `;
+
+}
